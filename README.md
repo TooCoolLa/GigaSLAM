@@ -1,4 +1,13 @@
 # GigaSLAM
-GigaSLAM official code implementation
 
-We are diligently working to make our open-source code available as soon as possible. In the meantime, if you have any questions or need more information, please don’t hesitate to reach out to dengkai [@] mail [DOT] nankai [DOT] edu [DOT] cn.
+TODO: Update README
+<small>(I need more coffee)</small>
+
+```bibtex
+@article{deng2025gigaslam,
+  title={GigaSLAM: Large-Scale Monocular SLAM with Hierachical Gaussian Splats},
+  author={Deng, Kai and Yang, Jian and Wang, Shenlong and Xie, Jin},
+  journal={arXiv preprint arXiv:2503.08071},
+  year={2025}
+}
+```

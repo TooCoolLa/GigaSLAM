@@ -8,7 +8,7 @@ This repository contains the source code for our papers:
 
 ### Hardware and System Environment
 
-This project was developed, tested, and run in the following hardware/software environment
+This project was developed, tested, and run in the following hardware/system environment
 
 ```
 Hardware：

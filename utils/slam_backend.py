@@ -100,6 +100,7 @@ class BackEnd(mp.Process):
         self.single_thread = self.config["Training"]["single_thread"]
 
     def add_next_kf(self, frame_idx, viewpoint, init=False, scale=2.0, depth_map=None, rgb = None):
+        print('BACKEND: add_next_kf id', frame_idx)
         self.gaussians.extend_gaussian(
             viewpoint, anchor_index = frame_idx,  init=init, depthmap=depth_map, rgb = rgb
         )
@@ -436,6 +437,7 @@ class BackEnd(mp.Process):
                     poses_old = data[2]
                     poses_update = data[3]
                     kf_indices = data[4]
+
                     update_viewpoints_from_poses(self.viewpoints, torch.tensor(poses_update))
                     updated_pcd = update_point_cloud_in_batches(self.gaussians.get_anchor,
                                                                 poses_old, 

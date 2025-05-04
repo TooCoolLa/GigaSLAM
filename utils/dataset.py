@@ -17,7 +17,6 @@ except Exception:
     pass
 
 
-
 class KittiParser:
     def __init__(self, color_folder, pose_path):
         self.input_folder = color_folder
@@ -39,7 +38,6 @@ class KittiParser:
 
             frames.append(frame)
         self.frames = frames
-
 
 
 class BaseDataset(torch.utils.data.Dataset):
@@ -142,6 +140,7 @@ class MonocularDataset(BaseDataset):
         image_ori = np.array(Image.open(color_path))
         image = cv2.resize(image_ori, (self.width, self.height))
         depth = None
+        depth_ori = None
 
         if self.disorted:
             image = cv2.remap(image, self.map1x, self.map1y, cv2.INTER_LINEAR)
@@ -150,6 +149,7 @@ class MonocularDataset(BaseDataset):
             depth_path = self.depth_paths[idx]
             depth_ori = np.array(Image.open(depth_path)) / self.depth_scale
             depth = cv2.resize(depth_ori, (self.width, self.height))
+
 
         image = (
             torch.from_numpy(image / 255.0)

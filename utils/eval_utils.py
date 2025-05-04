@@ -120,15 +120,16 @@ def eval_ate(frames, kf_ids, save_dir, iterations, final=False, monocular=False)
     return ate
 
 
+# 定义一个函数，将张量转换为 JSON 可序列化的格式
 def tensor_to_serializable(obj):
-    if isinstance(obj, torch.Tensor): 
-        return obj.cpu().tolist() 
-    elif isinstance(obj, (list, tuple)): 
-        return [tensor_to_serializable(item) for item in obj] 
-    elif isinstance(obj, dict):  
-        return {key: tensor_to_serializable(value) for key, value in obj.items()}  
+    if isinstance(obj, torch.Tensor):  # 如果是张量
+        return obj.cpu().tolist()  # 移动到 CPU 并转换为列表
+    elif isinstance(obj, (list, tuple)):  # 如果是列表或元组
+        return [tensor_to_serializable(item) for item in obj]  # 递归处理每个元素
+    elif isinstance(obj, dict):  # 如果是字典
+        return {key: tensor_to_serializable(value) for key, value in obj.items()}  # 递归处理每个键值对
     else:
-        return obj 
+        return obj  # 其他类型直接返回
 
 def eval_rendering(
     frames,
@@ -166,6 +167,57 @@ def eval_rendering(
         for idx in frames.keys():
             f.write(f'{idx}' + '\n')
     
+    anchor_point_json = {}
+    anchor_point_json['level_all'] = []
+    anchor_point_json['frustum'] = []
+    for i in range(len(gaussians.distance_lis) + 1):
+        anchor_point_json[f'level_{i}'] = []
+
+    for idx in frames.keys():
+        frame = frames[idx]
+        # == anchor point json ==
+        m = anchor_in_frustum(anchors=gaussians.get_anchor, 
+                                    intrinsics=intrinsics, 
+                                    pose=get_pose(frame), 
+                                    cam_center=frame.camera_center,
+                                    # distance_lis = gaussians.distance_lis,
+                                    levels=gaussians.get_level, 
+                                    h=height, 
+                                    w=width,
+                                    # level_index=0
+                                    )
+        anchor_point_json['frustum'].append(m.count_nonzero().cpu().float())
+        m = anchor_in_frustum(anchors=gaussians.get_anchor, 
+                                    intrinsics=intrinsics, 
+                                    pose=get_pose(frame), 
+                                    cam_center=frame.camera_center,
+                                    distance_lis = gaussians.distance_lis,
+                                    levels=gaussians.get_level, 
+                                    h=height, 
+                                    w=width,
+                                    # level_index=0
+                                    )
+        anchor_point_json['level_all'].append(m.count_nonzero().cpu().float())
+
+        for i in range(len(gaussians.distance_lis) + 1):
+            m = anchor_in_frustum(anchors=gaussians.get_anchor, 
+                                        intrinsics=intrinsics, 
+                                        pose=get_pose(frame), 
+                                        cam_center=frame.camera_center,
+                                        distance_lis = gaussians.distance_lis,
+                                        levels=gaussians.get_level, 
+                                        h=height, 
+                                        w=width,
+                                        level_index=i
+                                        )
+            anchor_point_json[f'level_{i}'].append(m.count_nonzero().cpu().float())
+
+    anchor_json_path = os.path.join(save_dir, 'anchor_points.json')
+
+    with open(anchor_json_path, 'w', encoding='utf-8') as f:
+        anchor_point_json = tensor_to_serializable(anchor_point_json)
+        json.dump(anchor_point_json, f, ensure_ascii=False, indent=4)
+
     with open(pose_txt_path, 'w') as f:
         for idx in frames.keys():
             saved_frame_idx.append(idx)
@@ -181,7 +233,7 @@ def eval_rendering(
             
             flat_matrix = pose_est.flatten()
             line = ' '.join(map(str, flat_matrix))
-
+            # 写入文件
             f.write(line + '\n')
 
 
@@ -204,15 +256,15 @@ def eval_rendering(
                 visible_mask=opt_mask
             )
             rendering = render_pkg['render']
-
-            # Upsample before evaluating
+            torchvision.utils.save_image(rendering, os.path.join(img_save_path, f'downsample_img_{idx}.png'))
+            
             rendering = F.interpolate(rendering.unsqueeze(0), 
                                       size = (h_ori, w_ori), 
                                       mode = 'bicubic', 
                                       align_corners=False)
             rendering = rendering.squeeze(0)
 
-            print(f'Saving img_{idx}.png')
+            print(f'Saving img_{idx}.png', end="", flush=True)
             torchvision.utils.save_image(rendering, os.path.join(img_save_path, f'img_{idx}.png'))
 
             image = torch.clamp(rendering, 0.0, 1.0)

@@ -19,7 +19,7 @@ from utils.anchor_utils import anchor_in_frustum
 
 from unidepth.models import UniDepthV2 
 
-snapshot_dir = "./weight/models--lpiccinelli--unidepth-v2-vitl14/snapshots/1d0d3c52f60b5164629d279bb9a7546458e6dcc4"  
+snapshot_dir = "/media/deng/Data/UniDepth/weight/models--lpiccinelli--unidepth-v2-vitl14/snapshots/1d0d3c52f60b5164629d279bb9a7546458e6dcc4"  
 
 class FrontEnd(mp.Process):
     def __init__(self, config, dataset):
@@ -178,10 +178,14 @@ class FrontEnd(mp.Process):
             window.remove(removed_frame)
 
 
+        print('Current Window', window)
+
+
 
         return window, removed_frame
 
     def request_keyframe(self, cur_frame_idx, viewpoint, current_window, depthmap):
+        print('request_keyframe:', cur_frame_idx)
         msg = ["keyframe", cur_frame_idx, viewpoint, current_window, depthmap]
         self.backend_queue.put(msg)
         self.requested_keyframe += 1
@@ -263,6 +267,14 @@ class FrontEnd(mp.Process):
                     self.dataset, cur_frame_idx, projection_matrix
                 )
 
+                # unidepth take [C(rgb), H, W] as input 0~255 in uint8
+                image_ori_for_depthmodel = torch.tensor(viewpoint.image_ori).cuda().to(torch.uint8)
+                predictions = self.depth_model.infer(image_ori_for_depthmodel, self.intrinsics) # return [1, 1, H, W]
+                depth_pred = predictions["depth"].detach() # depth range: 0-255 in float
+                depth_ori = depth_pred.squeeze().cpu().numpy() # shape: [H, W]
+                depth_down = cv2.resize(depth_ori, (self.dataset.width, self.dataset.height))
+                viewpoint.depth_ori = depth_ori
+                viewpoint.depth =depth_down
                 
                 if cur_frame_idx > 2:
                     flow = self.classic_tracking.motion_flow_keyframe(viewpoint.image_ori, prev_kf=False)
@@ -270,15 +282,6 @@ class FrontEnd(mp.Process):
                         cur_frame_idx += 1
                         continue
 
-                # unidepth take [C(rgb), H, W] as input 0~255 in uint8
-                image_ori_for_depthmodel = (torch.tensor(viewpoint.image_ori).cuda() * 255.0).clamp(0, 255).to(torch.uint8)
-                predictions = self.depth_model.infer(image_ori_for_depthmodel, self.intrinsics) # return [1, 1, H, W]
-                depth_pred = predictions["depth"].detach()
-                depth_ori = depth_pred.squeeze().cpu().numpy() # shape: [H, W]
-                depth_down = cv2.resize(depth_ori, (self.dataset.width, self.dataset.height))
-                viewpoint.depth_ori = depth_ori
-                viewpoint.depth =depth_down
-                
                 viewpoint.compute_grad_mask(self.config)
 
                 self.classic_tracking.loop_kf(viewpoint.image_ori,  self.classic_tracking.kp_frame_id)
@@ -327,14 +330,25 @@ class FrontEnd(mp.Process):
                     len(self.current_window) == self.window_size
                 )
 
+
+
+                # Tracking
+                betime = time.time()
                 self.tracking(cur_frame_idx, viewpoint)
+                endtime = time.time()
+                print(f'tracking {(endtime - betime) * 1000} ms')
 
 
                 self.current_window, removed = self.add_to_window(
                     cur_frame_idx,
                     self.current_window,
                 )
-
+                if self.monocular and not self.initialized and removed is not None:
+                    self.reset = True
+                    Log(
+                        "Keyframes lacks sufficient overlap to initialize the map, resetting."
+                    )
+                    continue
                 depth_map = self.add_new_keyframe(
                     cur_frame_idx,
                     init=False,

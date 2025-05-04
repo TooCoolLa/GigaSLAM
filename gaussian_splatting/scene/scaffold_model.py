@@ -855,6 +855,8 @@ class GaussianModel:
         
         self._anchor = nn.Parameter(updated_anchor.requires_grad_(True))
 
+        self.replace_tensor_to_optimizer(self._anchor, 'anchor')
+
 
 
     def training_setup(self, training_args):

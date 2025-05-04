@@ -11,7 +11,7 @@ except:
     raise ModuleNotFoundError("Couldn't load dpretrieval. It may not be installed.")
 
 
-NMS = 50 # Slow motion gets removed from keyframes anyway. So this is really the keyframe distance
+NMS = 25 # Slow motion gets removed from keyframes anyway. So this is really the keyframe distance
 
 RAD = 50
 
@@ -24,6 +24,7 @@ def _dbow_loop(in_queue, out_queue, vocab_path, ready):
     while True:
         n, image = in_queue.get()
         dbow.insert_image(image)
+        print('_dbow_loop:', n)
         q = dbow.query(n)
         out_queue.put((n, q))
 
@@ -32,8 +33,7 @@ class RetrievalDBOW:
     def __init__(self, vocab_path="ORBvoc.txt"):
         if not os.path.exists(vocab_path):
             raise FileNotFoundError("""Missing the ORB vocabulary. Please download and un-tar it from """
-                                  """https://github.com/UZ-SLAMLab/ORB_SLAM3/blob/master/Vocabulary/ORBvoc.txt.tar.gz"""
-                                  f""" and place it in DPVO/""")
+                                  """https://github.com/UZ-SLAMLab/ORB_SLAM3/blob/master/Vocabulary/ORBvoc.txt.tar.gz""")
 
         # Store a record of saved and unsaved images
         self.image_buffer = {}

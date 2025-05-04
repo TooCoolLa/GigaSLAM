@@ -1,4 +1,7 @@
-# https://github.com/Huangying-Zhan/DF-VO
+"""
+Code adapted and modified from DF-VO:
+    -https://github.com/Huangying-Zhan/DF-VO
+"""
 
 import numpy as np
 from sklearn import linear_model

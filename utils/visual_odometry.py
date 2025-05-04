@@ -17,24 +17,46 @@ import numpy as np
 from einops import asnumpy, rearrange, repeat
 
 from utils.loop_closure.retrieval import ImageCache, RetrievalDBOW
-
+# import time
 
 from utils.pose_utils import poses_to_c2w_tensor, poses_to_quaternions, quaternions_to_poses, convert_pose_numpy_to_opencv_vectorized, convert_quat_opencv_to_c2w_vectorized
 from utils.slam_utils import get_matched_camera_points_vectorized, compute_sim3_open3d
 
 import pypose as pp
 
+import json
+
+
+import numpy as np
+import matplotlib.pyplot as plt
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 
+
 class CameraModel(object):
+    """
+    Class that represents a pin-hole camera model (or projective camera model).
+    In the pin-hole camera model, light goes through the camera center (cx, cy) before its projection
+    onto the image plane.
+    """
     def __init__(self, params):
+        """
+        Creates a camera model
+
+        Arguments:
+            params {dict} -- Camera parameters
+        """
+
+        # Image resolution
+
         self.width = float(params['width'][0])
         self.height = float(params['height'][0])
+        # Focal length of camera
         self.fx = float(params['fx'][0])
         self.fy = float(params['fy'][0])
+        # Optical center (principal point)
         self.cx = float(params['cx'][0])
         self.cy = float(params['cy'][0])
         
@@ -90,7 +112,7 @@ class ClassicTracking:
         self.lg_matcher = KF.LightGlueMatcher("disk").eval().to("cuda")
         self.disk = KF.DISK.from_pretrained("depth").to("cuda")
         
-        self.pose = np.eye(4) 
+        self.pose = np.eye(4)  # pose matrix [R | t; 0  1]
 
         self.pose_ref = np.eye(4)
 
@@ -316,7 +338,7 @@ class ClassicTracking:
 
             if frame_id > 10 and self.loop_enable:
                 
-                cands = self.retrieval.detect_loop(thresh=0.04, num_repeat=3)
+                cands = self.retrieval.detect_loop(thresh=0.033, num_repeat=3)
 
                 if cands is not None:
                     print(' -----> LOOP DETECTED!!')
@@ -738,7 +760,7 @@ def compute_pose_2d2d(kp_ref, kp_cur, cam_intrinsics):
                 focal=cam_intrinsics.fx,
                 pp=principal_points,
                 method=cv2.RANSAC,
-                method=cv2.LMEDS,
+                # method=cv2.LMEDS,
                 prob=0.99,
                 threshold=0.2,
             )

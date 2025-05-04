@@ -11,6 +11,7 @@ cameras.json
 *.ply
 *.mp4
 *.pth
+*.pt
 datasets
 wandb
 

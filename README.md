@@ -57,7 +57,8 @@ pip install -r requirements.txt
 **Note:** If you encounter installation issues with `torch_scatter` (which may happen in certain network environments), comment out the corresponding line in `requirements.txt` and manually download & install the wheel from link: https://pytorch-geometric.com/whl/
 
 ```bash
-wget https://data.pyg.org/whl/torch-2.2.0%2Bcu118/torch_scatter-2.1.2%2Bpt22cu118-cp310-cp310-linux_x86_64.whl  # Alternatively, you could manually download via your browser
+wget https://data.pyg.org/whl/torch-2.2.0%2Bcu118/torch_scatter-2.1.2%2Bpt22cu118-cp310-cp310-linux_x86_64.whl  
+# Alternatively, you could manually download via your browser
 pip install ./torch_scatter-2.1.2+pt22cu118-cp310-cp310-linux_x86_64.whl
 ```
 

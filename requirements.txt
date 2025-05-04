@@ -12,7 +12,6 @@ PyGLM
 lpips
 rich
 ruff
-
 jaxtyping
 plyfile
 torch_scatter
@@ -20,8 +19,6 @@ einops
 kornia
 pypose
 numba
-
-
 appdirs
 attrs
 black

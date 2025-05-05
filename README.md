@@ -4,7 +4,7 @@ This repository contains the source code for our papers:
 
 [GigaSLAM: Large-Scale Monocular SLAM with Hierachical Gaussian Splats](https://arxiv.org/abs/2503.08071)
 
-##  Setup and Installation
+##  Setup, Installation & Running
 
 ### Hardware and System Environment
 
@@ -126,27 +126,25 @@ pip install ./DPRetrieval
 python setup.py install
 ```
 
-#### Step 3: Running the code
+#### Step 3: Bag of Words Model Setup
+ 
+Download the pre-trained Bag of Words vocabulary for `DBoW2`:
 
-##### Step 3.1: Bag of Words Model Setup
- 
- Download the pre-trained Bag of Words vocabulary for `DBoW2`:
+```bash
+# Download the vocabulary file (about 150 MiB)
+wget https://github.com/UZ-SLAMLab/ORB_SLAM3/raw/master/Vocabulary/ORBvoc.txt.tar.gz
+# Or, you could download manually from the link via your browser
 
- ```bash
- # Download the vocabulary file (about 150 MiB)
- wget https://github.com/UZ-SLAMLab/ORB_SLAM3/raw/master/Vocabulary/ORBvoc.txt.tar.gz
- # Or, you could download manually from the link via your browser
+# Extract the vocabulary file
+tar -xzvf ORBvoc.txt.tar.gz
+
+# Verify extraction
+ls -l ORBvoc.txt
+```
  
- # Extract the vocabulary file
- tar -xzvf ORBvoc.txt.tar.gz
+### Execute SLAM Pipeline
  
- # Verify extraction
- ls -l ORBvoc.txt
- ```
- 
- ##### Step 3.2: Execute SLAM Pipeline
- 
- Run the following command. **Pretrained weights** for `DISK`, `LightGlue`, and `UniDepth` will be automatically downloaded on the first execution:
+Run the following command. **Pretrained weights** for `DISK`, `LightGlue`, and `UniDepth` will be automatically downloaded on the first execution:
 
 ```bash
 python slam.py --config ./path_to_your_config.yaml

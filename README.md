@@ -12,7 +12,7 @@ This project was developed, tested, and run in the following hardware/system env
 
 ```
 Hardware Environment：
-    CPU(s): Intel Xeon(R) Gold 6128 CPU @ 3.40GHz × 12
+    CPU(s): Intel Xeon(R) Gold 6128 CPU @ 3.40GHz × 12 / Intel Xeon(R) Platinum 8467C CPU @ 2.60GHz x 20
     GPU(s): NVIDIA RTX 4090 (24 GiB VRAM) / NVIDIA L20 (48 GiB GDDR6)
     RAM: 67.0 GiB (DDR4, 2666 MT/s) / 128.0 GiB (DDR4, 3200 MT/s)
     Disk: Dell 8TB 7200RPM HDD (SATA, Seq. Read 220 MiB/s)
@@ -76,7 +76,7 @@ pip install ./torch_scatter-2.1.2+pt22cu118-cp310-cp310-linux_x86_64.whl
 > **Extended Compatibility Guidance:**
 > For developers requiring alternative `xformers` or `PyTorch` versions, consult the [xFormers GitHub Repository](https://github.com/facebookresearch/xformers) for version relationships. While the repository lacks an official compatibility reference, we have curated version compatibility references by cross-referencing release notes. The following table may assist both GigaSLAM users and general developers who are encountering similar dependency conflicts:
 >
-> | `xFormer` | `PyTorch` | `xFormer` | `PyTorch` |
+> | `xFormers` | `PyTorch` | `xFormers` | `PyTorch` |
 > | :-------: | :-------: | :-------: | :-------: |
 > |  0.0.21   |   2.0.1   |  0.0.26   |   2.2.0   |
 > |  0.0.22   |   2.0.1   |  0.0.27   |   2.3.0   |

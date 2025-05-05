@@ -97,13 +97,13 @@ pip install submodules/diff-gaussian-rasterization
 
 ##### Step 2.2: Compile Loop-Closure Detection Module
 
-1. Install the OpenCV C++ API.
+Install the `OpenCV C++ API`.
 
 ```
 sudo apt-get install -y libopencv-dev
 ```
 
-2. Install DBoW2
+Install `DBoW2`
 
 ```
 cd DBoW2
@@ -114,7 +114,7 @@ sudo make install
 cd ../..
 ```
 
-3. Install the image retrieval
+Install the image retrieval
 
 ```
 pip install ./DPRetrieval

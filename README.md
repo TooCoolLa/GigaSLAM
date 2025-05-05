@@ -39,6 +39,7 @@ Creating a virtual environment using conda (or miniconda)
 ```bash
 conda create -n gigaslam python=3.10
 conda activate gigaslam
+# pip version created by conda: 25.1
 ```
 
 Next, install `PyTorch`

@@ -125,7 +125,7 @@ python setup.py install
 
 ### Running
 
-Run the code by using the following command, and the pre-training weights of models such as DISK, LightGlue and UniDepth will be downloaded during the first run.
+Run the code by using the following command, and the pre-training weights of models such as `DISK`, `LightGlue` and `UniDepth` will be downloaded during the first run.
 
 ```bash
 python slam.py --config ./path_to_your_config.yaml

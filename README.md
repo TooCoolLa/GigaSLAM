@@ -125,13 +125,15 @@ python setup.py install
 
 ### Running
 
+Run the code by using the following command, and the pre-training weights of models such as DISK, LightGlue and UniDepth will be downloaded during the first run.
+
 ```bash
-python --config ./path_to_your_config.yaml
+python slam.py --config ./path_to_your_config.yaml
 ```
 
 ## Acknowledgements
 
-Our project is based on [Scaffold-GS](https://github.com/city-super/Scaffold-GS), [UniDepth](https://github.com/lpiccinelli-eth/UniDepth), [MonoGS](https://github.com/muskie82/MonoGS), [DF-VO](https://github.com/Huangying-Zhan/DF-VO), [DPV-SLAM](https://github.com/princeton-vl/DPVO). Our work would not have been possible without these excellent repositories.
+Our project is based on [Scaffold-GS](https://github.com/city-super/Scaffold-GS), [UniDepth](https://github.com/lpiccinelli-eth/UniDepth), [MonoGS](https://github.com/muskie82/MonoGS), [DF-VO](https://github.com/Huangying-Zhan/DF-VO), [DPVO (DPV-SLAM)](https://github.com/princeton-vl/DPVO). Our work would not have been possible without these excellent repositories.
 
 ## Citation
 

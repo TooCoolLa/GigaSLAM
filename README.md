@@ -142,9 +142,9 @@ tar -xzvf ORBvoc.txt.tar.gz
 ls -l ORBvoc.txt
 ```
  
-### Execute SLAM Pipeline
+### Running the code
  
-Run the following command. **Pretrained weights** for `DISK`, `LightGlue`, and `UniDepth` will be automatically downloaded on the first execution:
+Run the following command to start the SLAM process. **Pretrained weights** for `DISK`, `LightGlue`, and `UniDepth` will be automatically downloaded on the first execution:
 
 ```bash
 python slam.py --config ./path_to_your_config.yaml

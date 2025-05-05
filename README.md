@@ -32,7 +32,7 @@ As part of the project code relies on `CUDA/C++`, please ensure your compilation
 
 ### Environment Setup
 
-#### Step 1: Virtual Environment Creation and Dependency Installation
+#### Step 1: Dependency Installation
 
 Creating a virtual environment using conda (or miniconda)
 

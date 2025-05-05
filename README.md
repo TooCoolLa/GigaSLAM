@@ -61,8 +61,11 @@ pip install -r requirements.txt
 **Note:** If you encounter installation issues with `torch_scatter` (which may happen in certain network environments), comment out the corresponding line in `requirements.txt` and manually download & install the wheel from link: https://pytorch-geometric.com/whl/
 
 ```bash
+# Download the torch_scatter wheel package for torch-2.2.0 + CUDA 11.8
 wget https://data.pyg.org/whl/torch-2.2.0%2Bcu118/torch_scatter-2.1.2%2Bpt22cu118-cp310-cp310-linux_x86_64.whl  
-# Alternatively, you could manually download via your browser
+# Alternative: Manually download via browser from the same URL
+
+# Install the torch_scatter from the local wheel file
 pip install ./torch_scatter-2.1.2+pt22cu118-cp310-cp310-linux_x86_64.whl
 ```
 
@@ -123,17 +126,36 @@ pip install ./DPRetrieval
 python setup.py install
 ```
 
-> **Important Notes:** This project is implemented based on the MonoGS framework, whose native architecture primarily targets small-scale scenes. In terms of hardware requirements, processing ultra-long sequence data significantly increases CPU RAM load - through targeted optimizations, we have stabilized the CPU memory consumption of 4000-frame KITTI datasets at approximately 10 GiB. However, longer sequences may still require additional memory resources. We strongly recommend running this system on server environments equipped with 32+ GiB CPU RAM. For **personal computers**  (particularly common 16 GiB CPU RAM setups), please continuously monitor memory usage via System Monitor (or similar) to prevent sudden memory spikes from affecting other system processes.
->
-> We are currently exploring methods to further optimize memory consumption to achieve better operational efficiency.
+#### Step 3: Running the code
 
-#### Step 3: Running
+##### Step 3.1: Bag of Words Model Setup
+ 
+ Download the pre-trained Bag of Words vocabulary for `DBoW2`:
 
-Run the code by using the following command, and the pre-training weights of models such as `DISK`, `LightGlue` and `UniDepth` will be downloaded during the first run.
+ ```bash
+ # Download the vocabulary file (about 150 MiB)
+ wget https://github.com/UZ-SLAMLab/ORB_SLAM3/raw/master/Vocabulary/ORBvoc.txt.tar.gz
+ # Or, you could download manually from the link via your browser
+ 
+ # Extract the vocabulary file
+ tar -xzvf ORBvoc.txt.tar.gz
+ 
+ # Verify extraction
+ ls -l ORBvoc.txt
+ ```
+ 
+ ##### Step 3.2: Execute SLAM Pipeline
+ 
+ Run the following command. **Pretrained weights** for `DISK`, `LightGlue`, and `UniDepth` will be automatically downloaded on the first execution:
 
 ```bash
 python slam.py --config ./path_to_your_config.yaml
 ```
+
+> **Important Notes:** This project is implemented based on the MonoGS framework, whose native architecture primarily targets small-scale scenes. In terms of hardware requirements, processing ultra-long sequence data significantly increases CPU RAM load - through targeted optimizations, we have stabilized the CPU memory consumption of 4000-frame KITTI datasets at approximately 10 GiB. However, longer sequences may still require additional memory resources. We strongly recommend running this system on server environments equipped with 32+ GiB CPU RAM. For **personal computers**  (particularly common 16 GiB CPU RAM setups), please continuously monitor memory usage via System Monitor (or similar) to prevent sudden memory spikes from affecting other system processes.
+>
+> We are currently exploring methods to further optimize memory consumption to achieve better operational efficiency.
+
 
 ## Acknowledgements
 

@@ -15,7 +15,7 @@ Hardware：
 	CPU(s)： Intel Xeon(R) Gold 6128 CPU @ 3.40GHz × 12
 	GPU(s)： NVIDIA RTX 4090 (24 GiB VRAM) / NVIDIA L20 (48 GiB GDDR6)
 	RAM：67.0 GiB (DDR4, 2666 MT/s) / 128.0 GiB (DDR4, 3200 MT/s)
-	Disk: Dell 8TB 7200RPM HDD (SATA, Seq.Read 220MiB/s)
+	Disk: Dell 8TB 7200RPM HDD (SATA, Seq. Read 220 MiB/s)
 System：
 	Linux System： Ubuntu 22.04.3 LTS
 	CUDA Version: 11.8

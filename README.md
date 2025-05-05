@@ -161,6 +161,8 @@ Our project is based on [Scaffold-GS](https://github.com/city-super/Scaffold-GS)
 
 ## Citation
 
+If you find our work helpful, please consider citing:
+
 ```bibtex
 @article{deng2025gigaslam,
   title={GigaSLAM: Large-Scale Monocular SLAM with Hierachical Gaussian Splats},

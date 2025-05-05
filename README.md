@@ -124,7 +124,7 @@ python setup.py install
 >
 > We are currently exploring methods to further optimize memory consumption to achieve better operational efficiency.
 
-### Running
+#### Step 3: Running
 
 Run the code by using the following command, and the pre-training weights of models such as `DISK`, `LightGlue` and `UniDepth` will be downloaded during the first run.
 

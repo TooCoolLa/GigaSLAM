@@ -17,15 +17,16 @@ Hardware：
 	RAM：67.0 GiB (DDR4, 2666 MT/s) / 128.0 GiB (DDR4, 3200 MT/s)
 	Disk: Dell 8TB 7200RPM HDD (SATA, Seq.Read 220MB/s)
 System：
-	Linux System： Ubuntu 22.04.3 LTS
-	CUDA Version: 11.8
-	cuDNN Version: 9.1.0
-	NVIDIA CUDA Compiler： nvcc V11.8.89
-	C++ Compiler: GCC/G++ 11.4.0
-	GNU Make Version： 4.3
-	Cmake Version 3.22.1
-	Conda version : miniconda 23.9.0
-	NVIDIA Drivers: 555.42.06
+	Operating System:	Ubuntu 22.04.3 LTS
+	CUDA Version: 		11.8
+	cuDNN Version:		9.1.0
+	Conda version : 	miniconda 23.9.0
+	NVIDIA Drivers: 	555.42.06
+Compiler Tools:
+	NVIDIA CUDA Compiler (nvcc): V11.8.89
+	C++ Compiler:		GCC/G++ 11.4.0
+	GNU Make Version: 	4.3
+	Cmake Version: 		3.22.1
 ```
 
 As part of the project code relies on `CUDA/C++`, please ensure your compilation environment is properly workable.
@@ -91,13 +92,13 @@ pip install submodules/diff-gaussian-rasterization
 
 ##### Step 2.2: Compile Loop-Closure Detection Module
 
-1. Install the OpenCV C++ API.
+1. Install the `OpenCV C++ API`.
 
 ```
 sudo apt-get install -y libopencv-dev
 ```
 
-2. Install DBoW2
+2. Install `DBoW2`
 
 ```
 cd DBoW2
@@ -120,17 +121,34 @@ pip install ./DPRetrieval
 python setup.py install
 ```
 
-> **Important Notes:** This project is implemented based on the MonoGS framework, whose native architecture primarily targets small-scale scenes. In terms of hardware requirements, processing ultra-long sequence data significantly increases CPU RAM load - through targeted optimizations, we have stabilized the CPU memory consumption of 4000-frame KITTI datasets at approximately 10 GiB. However, longer sequences may still require additional memory resources. We strongly recommend running this system on server environments equipped with 32+ GiB CPU RAM. For **personal computers**  (particularly common 16 GiB CPU RAM setups), please continuously monitor memory usage via System Monitor (or similar) to prevent sudden memory spikes from affecting other system processes.
->
-> We are currently exploring methods to further optimize memory consumption to achieve better operational efficiency.
+#### Step 3: Running the Code
 
-#### Step 3: Running
+##### Step 3.1: Bag of Words Model Setup
 
-Run the code by using the following command, and the pre-training weights of models such as `DISK`, `LightGlue` and `UniDepth` will be downloaded during the first run.
+Download the pre-trained Bag of Words vocabulary for `DBoW2`:
+```bash
+# Download the vocabulary file (about 150 MiB)
+wget https://github.com/UZ-SLAMLab/ORB_SLAM3/raw/master/Vocabulary/ORBvoc.txt.tar.gz
+# Or, you could download manually from the link via your browser
+
+# Extract the vocabulary
+tar -xzvf ORBvoc.txt.tar.gz
+
+# Verify extraction
+ls -l ORBvoc.txt
+```
+
+##### Step 3.2: Execute SLAM Pipeline
+
+Run the following command. **Pretrained weights** for `DISK`, `LightGlue`, and `UniDepth` will be automatically downloaded on the first execution:
 
 ```bash
 python slam.py --config ./path_to_your_config.yaml
 ```
+
+> **Important Notes:** This project is implemented based on the MonoGS framework, whose native architecture primarily targets small-scale scenes. In terms of hardware requirements, processing ultra-long sequence data significantly increases CPU RAM load - through targeted optimizations, we have stabilized the CPU memory consumption of 4000-frame KITTI datasets at approximately 10 GiB. However, longer sequences may still require additional memory resources. We strongly recommend running this system on server environments equipped with 32+ GiB CPU RAM. For **personal computers**  (particularly common 16 GiB CPU RAM setups), please continuously monitor memory usage via System Monitor (or similar) to prevent sudden memory spikes from affecting other system processes.
+>
+> We are currently exploring methods to further optimize memory consumption to achieve better operational efficiency.
 
 ## Acknowledgements
 

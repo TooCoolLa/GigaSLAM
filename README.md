@@ -11,22 +11,24 @@ This repository contains the source code for our papers:
 This project was developed, tested, and run in the following hardware/system environment
 
 ```
-Hardware：
-    CPU(s): Intel Xeon(R) Gold 6128 CPU @ 3.40GHz × 12
-    GPU(s): NVIDIA RTX 4090 (24 GiB VRAM) / NVIDIA L20 (48 GiB GDDR6)
-    RAM: 67.0 GiB (DDR4, 2666 MT/s) / 128.0 GiB (DDR4, 3200 MT/s)
-    Disk: Dell 8TB 7200RPM HDD (SATA, Seq. Read 220 MiB/s)
-System：
-    Linux System: Ubuntu 22.04.3 LTS
-    CUDA Version: 11.8
-    cuDNN Version: 9.1.0
-    Conda version: miniconda 23.9.0
-    NVIDIA Drivers: 555.42.06
-Compiler:
-    NVIDIA CUDA Compiler: nvcc V11.8.89
+Hardware Environment：
+	CPU(s)： Intel Xeon(R) Gold 6128 CPU @ 3.40GHz × 12
+	GPU(s)： NVIDIA RTX 4090 (24 GiB VRAM) / NVIDIA L20 (48 GiB GDDR6)
+	RAM：67.0 GiB (DDR4, 2666 MT/s) / 128.0 GiB (DDR4, 3200 MT/s)
+	Disk: Dell 8TB 7200RPM HDD (SATA, Seq. Read 220 MiB/s)
+
+System Environment：
+	Linux System: Ubuntu 22.04.3 LTS
+	CUDA Version: 11.8
+	cuDNN Version: 9.1.0
+	NVIDIA Drivers: 555.42.06
+	Conda version: 23.9.0 (Miniconda)
+
+Compilers & Build Tools:
+    NVIDIA CUDA Compiler (nvcc): V11.8.89
     C++ Compiler: GCC/G++ 11.4.0
-    GNU Make Version: 4.3
-    Cmake Version: 3.22.1
+    GNU Make Version： 4.3
+    Cmake Version 3.22.1
 ```
 
 As part of the project code relies on `CUDA/C++`, please ensure your compilation environment is properly workable.

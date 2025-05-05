@@ -12,9 +12,9 @@ This project was developed, tested, and run in the following hardware/system env
 
 ```
 Hardware Environment：
-    CPU(s)： Intel Xeon(R) Gold 6128 CPU @ 3.40GHz × 12
-    GPU(s)： NVIDIA RTX 4090 (24 GiB VRAM) / NVIDIA L20 (48 GiB GDDR6)
-    RAM：67.0 GiB (DDR4, 2666 MT/s) / 128.0 GiB (DDR4, 3200 MT/s)
+    CPU(s): Intel Xeon(R) Gold 6128 CPU @ 3.40GHz × 12
+    GPU(s): NVIDIA RTX 4090 (24 GiB VRAM) / NVIDIA L20 (48 GiB GDDR6)
+    RAM: 67.0 GiB (DDR4, 2666 MT/s) / 128.0 GiB (DDR4, 3200 MT/s)
     Disk: Dell 8TB 7200RPM HDD (SATA, Seq. Read 220 MiB/s)
 
 System Environment：
@@ -27,8 +27,8 @@ System Environment：
 Compilers & Build Tools:
     NVIDIA CUDA Compiler (nvcc): V11.8.89
     C++ Compiler: GCC/G++ 11.4.0
-    GNU Make Version： 4.3
-    Cmake Version 3.22.1
+    GNU Make Version: 4.3
+    Cmake Version: 3.22.1
 ```
 
 As part of the project code relies on `CUDA/C++`, please ensure your compilation environment is properly workable.

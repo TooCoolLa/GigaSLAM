@@ -4,6 +4,15 @@ This repository contains the source code for our papers:
 
 [GigaSLAM: Large-Scale Monocular SLAM with Hierachical Gaussian Splats](https://arxiv.org/abs/2503.08071)
 
+---
+
+> 🚧 We’ve seen the issues ([#2](https://github.com/DengKaiCQ/GigaSLAM/issues/2) & [#3](https://github.com/DengKaiCQ/GigaSLAM/issues/3))—thanks to everyone who’s reported them so thoroughly!
+Things are a bit hectic right now due to a busy academic period with multiple deadlines, so some fixes might be delayed.
+>
+>But! I’ll do my best to get to them ASAP! Thanks for your patience!
+>
+>In the meantime, contributions and suggestions are always welcome!
+
 ##  Setup, Installation & Running
 
 ### Hardware and System Environment

@@ -4,6 +4,14 @@ This repository contains the source code for our papers:
 
 [GigaSLAM: Large-Scale Monocular SLAM with Hierachical Gaussian Splats](https://arxiv.org/abs/2503.08071)
 
+![pipeline-a2d2](./assets/pipeline-a2d2.png)
+
+![render-cmp](./assets/render-cmp.png)
+
+We would like to thank [Devin.ai](https://devin.ai/) for providing large language model tools to assist in analyzing the repository code and help everyone better understand `GigaSLAM`. Below is the link to our repository - we welcome all visitors:
+
+https://deepwiki.com/DengKaiCQ/GigaSLAM
+
 ---
 
 > 🚧 We’ve seen the issues ([#2](https://github.com/DengKaiCQ/GigaSLAM/issues/2) & [#3](https://github.com/DengKaiCQ/GigaSLAM/issues/3))—thanks to everyone who’s reported them so thoroughly!
@@ -136,7 +144,7 @@ python setup.py install
 ```
 
 #### Step 3: Bag of Words Model Setup
- 
+
 Download the pre-trained Bag of Words vocabulary for `DBoW2`:
 
 ```bash
@@ -150,9 +158,11 @@ tar -xzvf ORBvoc.txt.tar.gz
 # Verify extraction
 ls -l ORBvoc.txt
 ```
- 
+
 ### Running the code
- 
+
+(To be done. need to modify)
+
 Run the following command to start the SLAM process. **Pretrained weights** for `DISK`, `LightGlue`, and `UniDepth` will be automatically downloaded on the first execution:
 
 ```bash
@@ -163,6 +173,9 @@ python slam.py --config ./path_to_your_config.yaml
 >
 > We are currently exploring methods to further optimize memory consumption to achieve better operational efficiency.
 
+## Eval
+
+(To be done.)
 
 ## Acknowledgements
 

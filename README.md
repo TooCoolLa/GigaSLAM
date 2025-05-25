@@ -4,9 +4,11 @@ This repository contains the source code for our papers:
 
 [GigaSLAM: Large-Scale Monocular SLAM with Hierachical Gaussian Splats](https://arxiv.org/abs/2503.08071)
 
-![pipeline-a2d2](./assets/pipeline-a2d2.png)
+![pipeline-a2d2](./assets/pipeline.png)
 
 ![render-cmp](./assets/render-cmp.png)
+
+![A2D2](./assets/A2D2.png)
 
 We would like to thank [Devin.ai](https://devin.ai/) for providing large language model tools to assist in analyzing the repository code and help everyone better understand `GigaSLAM`. Below is the link to our repository - we welcome all visitors:
 

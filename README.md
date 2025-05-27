@@ -188,10 +188,6 @@ Additionally, if you set `['SLAM']['viz']` in the `.yaml` file, you will be able
 >
 > We are currently exploring methods to further optimize memory consumption to achieve better operational efficiency.
 
-## Eval
-
-(To be done.)
-
 ## Acknowledgements
 
 Our project is based on [Scaffold-GS](https://github.com/city-super/Scaffold-GS), [UniDepth](https://github.com/lpiccinelli-eth/UniDepth), [MonoGS](https://github.com/muskie82/MonoGS), [DF-VO](https://github.com/Huangying-Zhan/DF-VO), [DPVO (DPV-SLAM)](https://github.com/princeton-vl/DPVO). Our work would not have been possible without these excellent repositories.

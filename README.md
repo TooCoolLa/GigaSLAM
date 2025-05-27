@@ -165,7 +165,8 @@ Before running the project, you need to modify the `.yaml` files under the `./co
 ```yaml
 ...
 Dataset:
-  color_path: "/media/deng/Data/4SeasonsDataset/BusinessCampus_recording_2020-10-08_09-30-57/undistorted_images/cam0" # replace it to your local path
+  color_path: "/media/deng/Data/4SeasonsDataset/BusinessCampus_recording_2020-10-08_09-30-57/undistorted_images/cam0" 
+  # replace it to your local path
   Calibration:
     fx: 501.4757919305817
 ...

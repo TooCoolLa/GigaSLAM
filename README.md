@@ -16,7 +16,7 @@ https://deepwiki.com/DengKaiCQ/GigaSLAM
 
 ### Update Log
 
-[2025/05/26] Fixed several issues including config files and submodule problems; refactored the code to reduce unnecessary memory allocations and improve thread-level parallelism; restructured parts of the underlying logic of the code; updated the paper, added some experiments and visualizations, and improved the writing of the article.
+[2025/05/26] 1. Fixed several issues including config files and submodule problems; 2. Refactored the code to reduce unnecessary memory allocations and improve thread-level parallelism; 3. Restructured parts of the underlying logic of the code; 4. Updated the paper, added some experiments and visualizations, and improved the writing of the article.
 
 ##  Setup, Installation & Running
 

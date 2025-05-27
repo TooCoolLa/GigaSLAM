@@ -14,14 +14,7 @@ We would like to thank [Devin.ai](https://devin.ai/) for providing large languag
 
 https://deepwiki.com/DengKaiCQ/GigaSLAM
 
----
-
-> 🚧 We’ve seen the issues ([#2](https://github.com/DengKaiCQ/GigaSLAM/issues/2) & [#3](https://github.com/DengKaiCQ/GigaSLAM/issues/3))—thanks to everyone who’s reported them so thoroughly!
-Things are a bit hectic right now due to a busy academic period with multiple deadlines, so some fixes might be delayed.
->
->But! I’ll do my best to get to them ASAP! Thanks for your patience!
->
->In the meantime, contributions and suggestions are always welcome!
+-----
 
 ##  Setup, Installation & Running
 

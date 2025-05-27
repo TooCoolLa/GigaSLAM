@@ -178,7 +178,16 @@ Then, run the following command to start the SLAM process. **Pretrained weights*
 python slam.py --config ./path_to_your_config.yaml
 ```
 
-**Note on loading `UniDepth` from HuggingFace:** `UniDepth` models are loaded from **HuggingFaceHub** by default.  However, due to network restrictions **in certain countries/regions**, even with a VPN, the model may fail to load properly. If this happens, set the `['DepthModel']['from_huggingface']` field in your `.yaml` config file to `False`.  Then manually download the `UniDepth` model weights (e.g., via a web browser),  and set the local path to the downloaded weights in the `['DepthModel']['local_snapshot_path']` field. You can find download links for various `UniDepth` model weights in the [UniDepth repository](https://github.com/lpiccinelli-eth/UniDepth)
+**Note on loading `UniDepth` from HuggingFace:** `UniDepth` models are loaded from **HuggingFaceHub** by default.  However, due to network restrictions **in certain countries/regions**, even with a VPN, the model may fail to load properly. If this happens, set the `['DepthModel']['from_huggingface']` field in your `.yaml` config file to `False`.  Then manually download the `UniDepth` model weights (e.g., via a web browser),  and set the local path to the downloaded weights in the `['DepthModel']['local_snapshot_path']` field. You can find download links for various `UniDepth` model weights in the [UniDepth repository](https://github.com/lpiccinelli-eth/UniDepth).
+
+The snapshot directory may contain the files as follows:
+
+```yaml
+snapshot_dir
+    ├── config.json
+    ├── model.safetensors
+    └── pytorch_model.bin
+```
 
 Additionally, if you set `['SLAM']['viz']` to `True` in the `.yaml` file, you will be able to see output like the following in the `result/your_exp/` directory during execution:
 

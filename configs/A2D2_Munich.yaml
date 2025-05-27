@@ -1,29 +1,29 @@
 inherit_from: "configs/base_config.yaml"
 
 Dataset:
-  color_path: "/media/deng/Data/KITTIdataset/data_odometry_color/dataset/sequences/05/image_2"
+  color_path: "/media/deng/Data/A2D2Dataset/Munich_camera_lidar/20190401_121727/camera/cam_front_center" # replace it to your local path
   Calibration:
-    fx: 7.070912000000e+02
-    fy: 7.070912000000e+02
-    cx: 6.018873000000e+02
-    cy: 1.831104000000e+02
+    fx: 1687.3369140625
+    fy: 1783.428466796875
+    cx: 965.4341405582381
+    cy: 684.4193604186803
     k1: 0.0
     k2: 0.0
     p1: 0.0
     p2: 0.0
     k3: 0.0
-    width: 1241
-    height: 376
+    width: 1920
+    height: 1208
     distorted: False
 
 SLAM:
   viz: True
   loop_closure: True
-  motion_thresh: 24.0 # smaller values result in denser tracking, but higher values may affect loop closure detection (value varies according to resolution)
+  motion_thresh: 42.0 # smaller values result in denser tracking, but higher values may affect loop closure detection (value varies according to resolution)
   loop_detect_thresh: 0.034 # smaller is better, but be careful of false positives
   3d2d_thread: 20 # number of parallel threads for 3D-2D matching
   2d2d_thread: 20 # number of parallel threads for 2D-2D matching
-  n_max: 5000 # maximum number of keyframes; increase if the sequence is longer
+  n_max: 15000 # maximum number of keyframes; increase if the sequence is longer
 
 DepthModel:
   from_huggingface: False

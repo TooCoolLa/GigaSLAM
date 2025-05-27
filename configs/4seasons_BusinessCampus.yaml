@@ -1,19 +1,19 @@
 inherit_from: "configs/base_config.yaml"
 
 Dataset:
-  color_path: "/media/deng/Data/KITTIdataset/data_odometry_color/dataset/sequences/05/image_2"
+  color_path: "/media/deng/Data/4SeasonsDataset/BusinessCampus_recording_2020-10-08_09-30-57/undistorted_images/cam0" # replace it to your local path
   Calibration:
-    fx: 7.070912000000e+02
-    fy: 7.070912000000e+02
-    cx: 6.018873000000e+02
-    cy: 1.831104000000e+02
+    fx: 501.4757919305817
+    fy: 501.4757919305817
+    cx: 421.7953735163109
+    cy: 167.65799492501083
     k1: 0.0
     k2: 0.0
     p1: 0.0
     p2: 0.0
     k3: 0.0
-    width: 1241
-    height: 376
+    width: 800
+    height: 400
     distorted: False
 
 SLAM:
@@ -23,7 +23,7 @@ SLAM:
   loop_detect_thresh: 0.034 # smaller is better, but be careful of false positives
   3d2d_thread: 20 # number of parallel threads for 3D-2D matching
   2d2d_thread: 20 # number of parallel threads for 2D-2D matching
-  n_max: 5000 # maximum number of keyframes; increase if the sequence is longer
+  n_max: 15000 # maximum number of keyframes; increase if the sequence is longer
 
 DepthModel:
   from_huggingface: False

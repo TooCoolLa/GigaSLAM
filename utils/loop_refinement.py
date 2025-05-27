@@ -1,4 +1,3 @@
-import time
 import sim3solve
 import numba as nb
 import numpy as np

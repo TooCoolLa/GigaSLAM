@@ -1,7 +1,7 @@
 import rich
 
 _log_styles = {
-    "MonoGS": "bold green",
+    "GigaSLAM": "bold green",
     "GUI": "bold magenta",
     "Eval": "bold red",
 }
@@ -13,6 +13,6 @@ def get_style(tag):
     return "bold blue"
 
 
-def Log(*args, tag="MonoGS"):
+def Log(*args, tag="GigaSLAM"):
     style = get_style(tag)
     rich.print(f"[{style}]{tag}:[/{style}]", *args)

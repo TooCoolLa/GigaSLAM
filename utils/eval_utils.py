@@ -6,10 +6,7 @@ import evo
 import numpy as np
 import torch
 from evo.core import metrics, trajectory
-from evo.core.metrics import PoseRelation, Unit
-from evo.core.trajectory import PosePath3D, PoseTrajectory3D
-from evo.tools import plot
-from evo.tools.plot import PlotMode
+from evo.core.trajectory import PosePath3D
 from evo.tools.settings import SETTINGS
 from matplotlib import pyplot as plt
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
@@ -21,7 +18,6 @@ from gaussian_splatting.utils.loss_utils import ssim
 from gaussian_splatting.utils.system_utils import mkdir_p
 from utils.pose_utils import get_pose
 from utils.logging_utils import Log
-
 
 from utils.anchor_utils import anchor_in_frustum
 
@@ -131,6 +127,7 @@ def tensor_to_serializable(obj):
     else:
         return obj  # 其他类型直接返回
 
+
 def eval_rendering(
     frames,
     gaussians,
@@ -143,6 +140,7 @@ def eval_rendering(
     height,
     width,
     iteration="final",
+    upsampling_method = 'bicubic'
 ):
 
     def gen_pose_matrix(R, T):
@@ -166,57 +164,6 @@ def eval_rendering(
     with open(pose_idx_txt_path, 'w') as f:
         for idx in frames.keys():
             f.write(f'{idx}' + '\n')
-    
-    anchor_point_json = {}
-    anchor_point_json['level_all'] = []
-    anchor_point_json['frustum'] = []
-    for i in range(len(gaussians.distance_lis) + 1):
-        anchor_point_json[f'level_{i}'] = []
-
-    for idx in frames.keys():
-        frame = frames[idx]
-        # == anchor point json ==
-        m = anchor_in_frustum(anchors=gaussians.get_anchor, 
-                                    intrinsics=intrinsics, 
-                                    pose=get_pose(frame), 
-                                    cam_center=frame.camera_center,
-                                    # distance_lis = gaussians.distance_lis,
-                                    levels=gaussians.get_level, 
-                                    h=height, 
-                                    w=width,
-                                    # level_index=0
-                                    )
-        anchor_point_json['frustum'].append(m.count_nonzero().cpu().float())
-        m = anchor_in_frustum(anchors=gaussians.get_anchor, 
-                                    intrinsics=intrinsics, 
-                                    pose=get_pose(frame), 
-                                    cam_center=frame.camera_center,
-                                    distance_lis = gaussians.distance_lis,
-                                    levels=gaussians.get_level, 
-                                    h=height, 
-                                    w=width,
-                                    # level_index=0
-                                    )
-        anchor_point_json['level_all'].append(m.count_nonzero().cpu().float())
-
-        for i in range(len(gaussians.distance_lis) + 1):
-            m = anchor_in_frustum(anchors=gaussians.get_anchor, 
-                                        intrinsics=intrinsics, 
-                                        pose=get_pose(frame), 
-                                        cam_center=frame.camera_center,
-                                        distance_lis = gaussians.distance_lis,
-                                        levels=gaussians.get_level, 
-                                        h=height, 
-                                        w=width,
-                                        level_index=i
-                                        )
-            anchor_point_json[f'level_{i}'].append(m.count_nonzero().cpu().float())
-
-    anchor_json_path = os.path.join(save_dir, 'anchor_points.json')
-
-    with open(anchor_json_path, 'w', encoding='utf-8') as f:
-        anchor_point_json = tensor_to_serializable(anchor_point_json)
-        json.dump(anchor_point_json, f, ensure_ascii=False, indent=4)
 
     with open(pose_txt_path, 'w') as f:
         for idx in frames.keys():
@@ -233,7 +180,6 @@ def eval_rendering(
             
             flat_matrix = pose_est.flatten()
             line = ' '.join(map(str, flat_matrix))
-            # 写入文件
             f.write(line + '\n')
 
 
@@ -260,11 +206,13 @@ def eval_rendering(
             
             rendering = F.interpolate(rendering.unsqueeze(0), 
                                       size = (h_ori, w_ori), 
-                                      mode = 'bicubic', 
+                                      mode = upsampling_method, 
                                       align_corners=False)
             rendering = rendering.squeeze(0)
 
-            print(f'Saving img_{idx}.png', end="", flush=True)
+            
+
+            Log(f'Saving img_{idx}.png')
             torchvision.utils.save_image(rendering, os.path.join(img_save_path, f'img_{idx}.png'))
 
             image = torch.clamp(rendering, 0.0, 1.0)

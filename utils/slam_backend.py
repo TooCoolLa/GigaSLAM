@@ -1,26 +1,18 @@
-import os
 import random
 
 import torch
 import torch.multiprocessing as mp
-import torchvision
 from tqdm import tqdm
 
 from gaussian_splatting.gaussian_renderer import render
 from gaussian_splatting.utils.loss_utils import l1_loss, ssim, l2_loss, nearMean_map, image2canny
 from utils.logging_utils import Log
 from utils.multiprocessing_utils import clone_obj
-from utils.pose_utils import adjust_camera, update_pose, get_pose
+from utils.pose_utils import update_pose, get_pose
 from utils.slam_utils import get_loss_mapping, update_viewpoints_from_poses, update_point_cloud_in_batches
-
 
 from utils.anchor_utils import anchor_in_frustum
 import numpy as np
-import cv2
-
-from utils.camera_utils import Camera
-import copy
-
 
 class BackEnd(mp.Process):
     def __init__(self, config, dataset):
@@ -74,7 +66,7 @@ class BackEnd(mp.Process):
         
         self.trajectory = 255 + np.zeros((700, 700, 3), dtype=np.uint8)
 
-        self.color_refinement_iter = config['SLAM']['color_refinement_iter']
+        self.color_refinement_iter = config['Hierarchical']['color_refinement_iter']
         self.viz = config['SLAM']['viz']
 
     def set_hyperparams(self):
@@ -100,7 +92,7 @@ class BackEnd(mp.Process):
         self.single_thread = self.config["Training"]["single_thread"]
 
     def add_next_kf(self, frame_idx, viewpoint, init=False, scale=2.0, depth_map=None, rgb = None):
-        print('BACKEND: add_next_kf id', frame_idx)
+        Log(f'BACKEND: add_next_kf idx: {frame_idx}')
         self.gaussians.extend_gaussian(
             viewpoint, anchor_index = frame_idx,  init=init, depthmap=depth_map, rgb = rgb
         )
@@ -446,7 +438,10 @@ class BackEnd(mp.Process):
                                                                 kf_indices)
                     self.gaussians.update_anchor_loop(updated_pcd.cuda())
 
+
+
                 elif data[0] == "keyframe":
+                    begin = time.time()
                     cur_frame_idx = data[1]
                     viewpoint = data[2]
                     current_window = data[3]

@@ -9,13 +9,15 @@ try:
     dpretrieval.DPRetrieval
 except:
     raise ModuleNotFoundError("Couldn't load dpretrieval. It may not be installed.")
+from collections import OrderedDict
 
+from utils.logging_utils import Log
 
 NMS = 25 # Slow motion gets removed from keyframes anyway. So this is really the keyframe distance
 
 RAD = 50
 
-MAX_BUFFER_SIZE = 200 
+MAX_BUFFER_SIZE = 20 
 
 def _dbow_loop(in_queue, out_queue, vocab_path, ready):
     """ Run DBoW retrieval """
@@ -24,7 +26,6 @@ def _dbow_loop(in_queue, out_queue, vocab_path, ready):
     while True:
         n, image = in_queue.get()
         dbow.insert_image(image)
-        print('_dbow_loop:', n)
         q = dbow.query(n)
         out_queue.put((n, q))
 
@@ -122,8 +123,8 @@ class RetrievalDBOW:
         assert parse_shape(image, '_ _ RGB') == dict(RGB=3)
         self.image_buffer[n] = image
 
-        if len(self.image_buffer) > MAX_BUFFER_SIZE:
-            self.image_buffer.popitem(last=False)  
+        # if len(self.image_buffer) > MAX_BUFFER_SIZE:
+        #     self.image_buffer.popitem(last=False)  
     
     def close(self):
         self.proc.terminate()

@@ -4,27 +4,23 @@ import torch
 import torch.multiprocessing as mp
 import cv2
 
-from gaussian_splatting.gaussian_renderer import render
 from gaussian_splatting.utils.graphics_utils import getProjectionMatrix2, getWorld2View2
-from gui import gui_utils
 from utils.camera_utils import Camera
-from utils.eval_utils import eval_ate, save_gaussians
 from utils.logging_utils import Log
-from utils.multiprocessing_utils import clone_obj
-from utils.pose_utils import update_pose, get_pose
-from utils.slam_utils import get_loss_tracking, get_median_depth, update_viewpoints_from_poses
+from utils.slam_utils import update_viewpoints_from_poses
 
 from utils.visual_odometry import ClassicTracking
-from utils.anchor_utils import anchor_in_frustum
 
 from unidepth.models import UniDepthV2 
 
-snapshot_dir = "/media/deng/Data/UniDepth/weight/models--lpiccinelli--unidepth-v2-vitl14/snapshots/1d0d3c52f60b5164629d279bb9a7546458e6dcc4"  
+import huggingface_hub
+
 
 class FrontEnd(mp.Process):
-    def __init__(self, config, dataset):
+    def __init__(self, config, dataset, save_dir = None):
         super().__init__()
         self.dataset = dataset
+        self.save_dir = save_dir
 
         self.config = config
         self.background = None
@@ -83,17 +79,24 @@ class FrontEnd(mp.Process):
         loop_enable = config['SLAM']['loop_closure']
         self.viz = config['SLAM']['viz']
 
-        self.classic_tracking = ClassicTracking(cam_params_ori, loop_enable, self.viz)
+        self.viz_frame_id_prev = 0
+        self.viz_frame_id_curr = 0
+        self.viz_frame_interval = 50
+
+        self.classic_tracking = ClassicTracking(cam_params_ori, loop_enable, self.viz, config, save_dir = self.save_dir)
 
         self.motion_thresh = config['SLAM']['motion_thresh']
 
         self.keyframe_idx_list = []
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.depth_model = UniDepthV2.from_pretrained(snapshot_dir)
+        if config['DepthModel']['from_huggingface']:
+            path = huggingface_hub.hf_hub_download(repo_id=config['DepthModel']['huggingface']['model_name'], filename=f"pytorch_model.bin", repo_type="model")
+            self.depth_model = UniDepthV2.load_state_dict(torch.load(path), strict=False)
+        else:
+            self.depth_model = UniDepthV2.from_pretrained(config['DepthModel']['local_snapshot_path'])
+            
         self.depth_model = self.depth_model.to(device)
-
-
 
 
     def set_hyperparams(self):
@@ -128,7 +131,11 @@ class FrontEnd(mp.Process):
             self.backend_queue.get()
 
         # Initialise the frame at the ground truth pose
-        viewpoint.update_RT(viewpoint.R_gt, viewpoint.T_gt)
+        T = torch.eye(4, device=viewpoint.device)
+        R_init = T[:3, :3]
+        T_init = T[:3, 3]
+        # viewpoint.update_RT(viewpoint.R_gt, viewpoint.T_gt)
+        viewpoint.update_RT(R_init, T_init)
 
         self.kf_indices = []
         depth_map = self.add_new_keyframe(cur_frame_idx, init=True)
@@ -138,7 +145,6 @@ class FrontEnd(mp.Process):
     def tracking(self, cur_frame_idx, viewpoint):
 
         R, T = self.classic_tracking.get_pose()
-
 
         viewpoint.update_RT(R, T)
 
@@ -177,15 +183,10 @@ class FrontEnd(mp.Process):
             removed_frame = window[-1]
             window.remove(removed_frame)
 
-
-        print('Current Window', window)
-
-
-
         return window, removed_frame
 
     def request_keyframe(self, cur_frame_idx, viewpoint, current_window, depthmap):
-        print('request_keyframe:', cur_frame_idx)
+        Log(f'request_keyframe: {cur_frame_idx}')
         msg = ["keyframe", cur_frame_idx, viewpoint, current_window, depthmap]
         self.backend_queue.put(msg)
         self.requested_keyframe += 1
@@ -266,6 +267,15 @@ class FrontEnd(mp.Process):
                 viewpoint = Camera.init_from_dataset(
                     self.dataset, cur_frame_idx, projection_matrix
                 )
+                
+                if cur_frame_idx > 2:
+                    flow = self.classic_tracking.motion_flow_keyframe(viewpoint.image_ori, prev_kf=False)
+                    if flow < self.motion_thresh:
+                        cur_frame_idx += 1
+
+                        Log(f'Skip frame {cur_frame_idx}')
+                        continue
+
 
                 # unidepth take [C(rgb), H, W] as input 0~255 in uint8
                 image_ori_for_depthmodel = torch.tensor(viewpoint.image_ori).cuda().to(torch.uint8)
@@ -275,12 +285,6 @@ class FrontEnd(mp.Process):
                 depth_down = cv2.resize(depth_ori, (self.dataset.width, self.dataset.height))
                 viewpoint.depth_ori = depth_ori
                 viewpoint.depth =depth_down
-                
-                if cur_frame_idx > 2:
-                    flow = self.classic_tracking.motion_flow_keyframe(viewpoint.image_ori, prev_kf=False)
-                    if flow < self.motion_thresh:
-                        cur_frame_idx += 1
-                        continue
 
                 viewpoint.compute_grad_mask(self.config)
 
@@ -290,16 +294,6 @@ class FrontEnd(mp.Process):
 
                 self.classic_tracking.kp_frame_id += 1
 
-
-                if cur_frame_idx > 10:
-
-                    flow = self.classic_tracking.motion_flow_keyframe(viewpoint.image_ori)
-
-                    if flow < self.motion_thresh:
-                        cur_frame_idx += 1
-                        continue
-
-                
                 self.classic_tracking.set_curr_keyframe(viewpoint.image_ori)
 
                 if loop_flag:
@@ -311,6 +305,7 @@ class FrontEnd(mp.Process):
                     poses_old = poses_old[:-1] # drop off the last pose (new keyframe)
                     update_viewpoints_from_poses(self.cameras, poses_update)
                     self.request_loop_update(cur_frame_idx, poses_old, poses_update, self.kf_indices)
+
 
                 
                 # Save RAM space, we dont need original resolution for mapping
@@ -330,14 +325,7 @@ class FrontEnd(mp.Process):
                     len(self.current_window) == self.window_size
                 )
 
-
-
-                # Tracking
-                betime = time.time()
                 self.tracking(cur_frame_idx, viewpoint)
-                endtime = time.time()
-                print(f'tracking {(endtime - betime) * 1000} ms')
-
 
                 self.current_window, removed = self.add_to_window(
                     cur_frame_idx,
@@ -349,6 +337,11 @@ class FrontEnd(mp.Process):
                         "Keyframes lacks sufficient overlap to initialize the map, resetting."
                     )
                     continue
+
+                if self.viz and (cur_frame_idx - self.viz_frame_id_prev) > self.viz_frame_interval:
+                    self.classic_tracking.viz_pose(self.classic_tracking.kp_frame_id)
+                    self.viz_frame_id_prev = cur_frame_idx
+
                 depth_map = self.add_new_keyframe(
                     cur_frame_idx,
                     init=False,
@@ -358,14 +351,13 @@ class FrontEnd(mp.Process):
                 )
                         
                 cur_frame_idx += 1
-                print(cur_frame_idx)
-
 
                 toc.record()
                 torch.cuda.synchronize()
                 if True:
                     duration = tic.elapsed_time(toc)
                     time.sleep(max(0.01, 1.0 / 3.0 - duration / 1000))
+
             else:
                 data = self.frontend_queue.get()
                 if data[0] == "sync_backend":

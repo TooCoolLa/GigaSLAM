@@ -26,9 +26,9 @@ import math
 
 from scipy.spatial import KDTree
 import torch.nn.functional as F
+from argparse import ArgumentParser, Namespace
 
-
-def generate_mask(depth):
+def generate_mask(depth, point_ratio = 26):
     """
     Generates a mask tensor of the same shape as the input depth tensor, 
     where 1/64 of the elements are randomly set to True and the rest are set to False.
@@ -42,7 +42,7 @@ def generate_mask(depth):
     """
     h, w = depth.shape
     num_points = h * w
-    num_true = num_points // 64
+    num_true = num_points // point_ratio
 
     # Create a mask with all False values
     mask = torch.zeros(h, w, dtype=torch.bool)
@@ -347,7 +347,7 @@ class GaussianModel:
         self.use_feat_bank = use_feat_bank
 
         self.appearance_dim = appearance_dim
-        self.level_dim = 1 
+        self.level_dim = 1
         self.embedding_appearance = None
         self.ratio = ratio
         self.add_opacity_dist = add_opacity_dist
@@ -989,13 +989,15 @@ class GaussianModel:
     def save_ply(self, path):
         mkdir_p(os.path.dirname(path))
 
-        anchor = self._anchor.detach().cpu().numpy()
+        level_mask = (self._level == 0)
+
+        anchor = self._anchor[level_mask].detach().cpu().numpy()
         normals = np.zeros_like(anchor)
-        anchor_feat = self._anchor_feat.detach().cpu().numpy()
-        offset = self._offset.detach().transpose(1, 2).flatten(start_dim=1).contiguous().cpu().numpy()
-        opacities = self._opacity.detach().cpu().numpy()
-        scale = self._scaling.detach().cpu().numpy()
-        rotation = self._rotation.detach().cpu().numpy()
+        anchor_feat = self._anchor_feat[level_mask].detach().cpu().numpy()
+        offset = self._offset[level_mask].detach().transpose(1, 2).flatten(start_dim=1).contiguous().cpu().numpy()
+        opacities = self._opacity[level_mask].detach().cpu().numpy()
+        scale = self._scaling[level_mask].detach().cpu().numpy()
+        rotation = self._rotation[level_mask].detach().cpu().numpy()
 
         dtype_full = [(attribute, 'f4') for attribute in self.construct_list_of_attributes()]
 
@@ -1358,21 +1360,69 @@ class GaussianModel:
         
         self.max_radii2D = torch.zeros((self.get_anchor.shape[0]), device="cuda")
 
+
+    def save_ckpt(self, path):
+        path = os.path.join(path, 'gaussian_save')
+        '''
+        Namespace(add_color_dist=False, add_cov_dist=False, add_opacity_dist=False, appearance_dim=0, data_device='cuda', ds=1, eval=False, feat_dim=32, images='images', lod=0, lowpoly=False, model_path='outputs/mipnerf360/kitchen/baseline/2024-01-19_14:00:04', n_offsets=10, ratio=1, resolution=-1, sh_degree=3, source_path='/cpfs01/shared/pjlab-lingjun-landmarks/pjlab-lingjun-landmarks_hdd/renkerui/data/mipnerf360/kitchen', undistorted=False, update_depth=3, update_hierachy_factor=4, update_init_factor=16, use_feat_bank=False, voxel_size=0.001, white_background=True)
+        '''
+        params = {
+            "add_color_dist": self.add_color_dist,
+            "add_cov_dist": self.add_cov_dist,
+            "add_opacity_dist": self.add_opacity_dist,
+            "appearance_dim": self.appearance_dim,
+            "data_device": "cuda",
+            "ds": 1,
+            "eval": False,
+            "feat_dim": self.feat_dim,
+            "images": "images",
+            "lod": 0,
+            "lowpoly": False,
+            "model_path": "./", 
+            "n_offsets": self.n_offsets,
+            "ratio": self.ratio,
+            "resolution": -1,
+            "sh_degree": 3,
+            "source_path": "./", 
+            "undistorted": False,
+            "update_depth": 3,
+            "update_hierachy_factor": 4,
+            "update_init_factor": 16,
+            "use_feat_bank": False,
+            "voxel_size": self.voxel_size_lis[0],
+            "white_background": True
+        }
+
+        class MockArgs:
+            def __init__(self, params):
+                for k, v in params.items():
+                    setattr(self, k, v)
+
+        args = MockArgs(params)
+        print("Output folder: {}".format(path))
+        os.makedirs(path, exist_ok = True)
+        with open(os.path.join(path, "cfg_args"), 'w') as cfg_log_f:
+            cfg_log_f.write(str(Namespace(**vars(args))))
+
+        point_cloud_path = os.path.join(path, "point_cloud")
+        self.save_ply(os.path.join(point_cloud_path, "point_cloud.ply"))
+        self.save_mlp_checkpoints(point_cloud_path)
+
     def save_mlp_checkpoints(self, path, mode = 'split'):#split or unite
         mkdir_p(os.path.dirname(path))
         if mode == 'split':
             self.mlp_opacity.eval()
-            opacity_mlp = torch.jit.trace(self.mlp_opacity, (torch.rand(1, self.feat_dim+3+self.opacity_dist_dim).cuda()))
+            opacity_mlp = torch.jit.trace(self.mlp_opacity, (torch.rand(1, self.feat_dim+3+self.opacity_dist_dim+self.level_dim).cuda()))
             opacity_mlp.save(os.path.join(path, 'opacity_mlp.pt'))
             self.mlp_opacity.train()
 
             self.mlp_cov.eval()
-            cov_mlp = torch.jit.trace(self.mlp_cov, (torch.rand(1, self.feat_dim+3+self.cov_dist_dim).cuda()))
+            cov_mlp = torch.jit.trace(self.mlp_cov, (torch.rand(1, self.feat_dim+3+self.cov_dist_dim+self.level_dim).cuda()))
             cov_mlp.save(os.path.join(path, 'cov_mlp.pt'))
             self.mlp_cov.train()
 
             self.mlp_color.eval()
-            color_mlp = torch.jit.trace(self.mlp_color, (torch.rand(1, self.feat_dim+3+self.color_dist_dim+self.appearance_dim).cuda()))
+            color_mlp = torch.jit.trace(self.mlp_color, (torch.rand(1, self.feat_dim+3+self.color_dist_dim+self.appearance_dim+self.level_dim).cuda()))
             color_mlp.save(os.path.join(path, 'color_mlp.pt'))
             self.mlp_color.train()
 

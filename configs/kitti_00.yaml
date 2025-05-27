@@ -1,4 +1,4 @@
-inherit_from: "configs/mono/kitti/base_config.yaml"
+inherit_from: "configs/base_config.yaml"
 
 Dataset:
   color_path: "/media/deng/Data/KITTIdataset/data_odometry_color/dataset/sequences/00/image_2"
@@ -17,5 +17,32 @@ Dataset:
     distorted: False
 
 SLAM:
-  motion_thresh: 26.0 
+  viz: True
   loop_closure: True
+  motion_thresh: 24.0 # smaller values result in denser tracking, but higher values may affect loop closure detection (value varies according to resolution)
+  loop_detect_thresh: 0.034 # smaller is better, but be careful of false positives
+  3d2d_thread: 20 # number of parallel threads for 3D-2D matching
+  2d2d_thread: 20 # number of parallel threads for 2D-2D matching
+  n_max: 5000 # maximum number of keyframes; increase if the sequence is longer
+
+DepthModel:
+  from_huggingface: False
+  huggingface:
+    model_name: 'lpiccinelli/unidepth-v2-vitl14' 
+    # vits / vitb / vitl: the larger the better but more GPU memory consumption
+    # lpiccinelli/unidepth-v2-vits14
+    # lpiccinelli/unidepth-v2-vitb14
+    # lpiccinelli/unidepth-v2-vitl14
+  local_snapshot_path: '/media/deng/Data/UniDepth/weight/models--lpiccinelli--unidepth-v2-vitl14/snapshots/1d0d3c52f60b5164629d279bb9a7546458e6dcc4' 
+  # replace it to your local path is snapshot downloaded
+
+Hierarchical:
+  voxel_size_lis: [0.1, 0.25, 1, 5, 25] # length must be equal to len(distance_lis) + 1
+  distance_lis: [20.0, 40.0, 80.0, 160.0] # depth range of unidepth: 0~255
+  n_offsets: 24 # the larger the better
+  point_ratio: 26 # the smaller the better
+  appearance_dim: 64
+  color_refinement_iter: 200 # the larger the better
+  rendering_width: 480
+  upsampling_method: 'bicubic' # using Deep Learing method may get better rendering result in original resolution
+  # qualty of F.interpolate mode: 'nearest' < 'area' < 'linear' ≈ 'bilinear' < 'bicubic'

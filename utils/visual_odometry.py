@@ -1,39 +1,18 @@
 import numpy as np
 import cv2
-# from scale_recovery import find_scale_from_depth
-
+from concurrent.futures import ThreadPoolExecutor
 import torch
-import kornia
 import kornia as K
 import kornia.feature as KF
-
+from utils.logging_utils import Log
 import os
-import numpy as np
-import cv2
-from utils.loop_refinement import make_pypose_Sim3, ransac_umeyama, SE3_to_Sim3, pose_refinement
+from utils.loop_refinement import make_pypose_Sim3, SE3_to_Sim3, pose_refinement
 from utils.scale_recovery import find_scale_from_depth
-
-import numpy as np
-from einops import asnumpy, rearrange, repeat
-
-from utils.loop_closure.retrieval import ImageCache, RetrievalDBOW
-# import time
-
-from utils.pose_utils import poses_to_c2w_tensor, poses_to_quaternions, quaternions_to_poses, convert_pose_numpy_to_opencv_vectorized, convert_quat_opencv_to_c2w_vectorized
-from utils.slam_utils import get_matched_camera_points_vectorized, compute_sim3_open3d
-
+from utils.loop_closure.retrieval import RetrievalDBOW
+from utils.pose_utils import poses_to_c2w_tensor, convert_pose_numpy_to_opencv_vectorized
+from utils.slam_utils import get_matched_camera_points_vectorized
 import pypose as pp
-
-import json
-
-
-import numpy as np
-import matplotlib.pyplot as plt
-
-import numpy as np
-import matplotlib.pyplot as plt
-
-
+from utils.slam_viz import plot_camera_poses, draw_concat_keypoints
 
 class CameraModel(object):
     """
@@ -50,7 +29,6 @@ class CameraModel(object):
         """
 
         # Image resolution
-
         self.width = float(params['width'][0])
         self.height = float(params['height'][0])
         # Focal length of camera
@@ -67,14 +45,16 @@ class CameraModel(object):
 
 class ClassicTracking:
 
-    def __init__(self, cam_params, loop_enable, viz):
+    def __init__(self, cam_params, loop_enable, viz, config, save_dir = None):
+
+        self.config = config
 
         self.loop_enable = loop_enable
         self.viz = viz
+        self.save_dir = save_dir
 
         if self.loop_enable:
             self.retrieval = RetrievalDBOW()
-            self.imcache = ImageCache()
         
         self.cam = CameraModel(cam_params)
 
@@ -103,11 +83,7 @@ class ClassicTracking:
         self.prev_kf = None
         self.feat_prev_kf = None
 
-
         self.kp_frame_id = 0 # frame id so far
-
-        self.detector = KF.DISK.from_pretrained("depth").to("cuda").eval()
-        self.lightglue = KF.LightGlue("disk").to("cuda").eval()
 
         self.lg_matcher = KF.LightGlueMatcher("disk").eval().to("cuda")
         self.disk = KF.DISK.from_pretrained("depth").to("cuda")
@@ -122,7 +98,7 @@ class ClassicTracking:
         self.kp_curr = None
 
 
-        n_max = 5000 
+        n_max = config['SLAM']['n_max'] 
         self.pose_history = np.repeat(np.eye(4)[np.newaxis, :, :], n_max, axis=0)  # Initialize
         self.pose_history_old = np.repeat(np.eye(4)[np.newaxis, :, :], n_max, axis=0)  # Initialize
 
@@ -131,11 +107,19 @@ class ClassicTracking:
         self.frame_history = []
         self.loop_kf_idx = 0
 
-
         # Loop Closure Vars
         self.loop_ii = torch.zeros(0, dtype=torch.long)
         self.loop_jj = torch.zeros(0, dtype=torch.long)
 
+    def viz_pose(self, frame_id):
+        if not self.viz:
+            return
+        
+        Log(f'Visualing of pose.')
+        pred_poses = self.pose_history[:frame_id, :, :]
+
+        out_filename = os.path.join(self.save_dir,'pred_poses.png') if self.save_dir is not None else 'pred_poses.png'
+        plot_camera_poses(pred_poses, torch.cat((self.loop_ii, self.loop_jj)), out_filename)
 
     def get_loop_update(self):
         return self.pose_history_old[:self.kp_frame_id, :, :], self.pose_history[:self.kp_frame_id, :, :]
@@ -168,12 +152,25 @@ class ClassicTracking:
             kp1 = self.feat_prev_kf[st == 1]
             kp2 = kp2[st == 1]
         else:
+            ### 8 ms avg ###
             kp2, st, err = cv2.calcOpticalFlowPyrLK(self.prev_frame, frame,
                                                     self.feat_ref, None,
                                                     # maxLevel=6,
                                                     winSize=(21, 21),
                                                     criteria=(
                                                     cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01))
+            
+            ### 2.5 ms avg but less accurate ###
+            # kp2, st, err = cv2.calcOpticalFlowPyrLK(
+            #     self.prev_frame,
+            #     frame,
+            #     self.feat_ref,
+            #     None,
+            #     winSize=(11, 11),
+            #     maxLevel=2,
+            #     criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 12, 0.03)
+            # )
+
 
             st = st.reshape(st.shape[0])  # status of points from frame to frame
             # Keypoints
@@ -204,12 +201,17 @@ class ClassicTracking:
             kp1, des1 = detector.detectAndCompute(frame, None)
             return kp1
 
-    def feature_matching(self, frame, fliter = False, lc_frame_id = None):
+    def feature_matching(self, frame, depth = None, fliter = False, lc_frame_id = None, depth_threshold = 65):
         """
         The feature-matching: looks for corresponding features in other images.
 
         Args:
             frame {ndarray}: frame to be processed
+            depth {ndarray}: optional depth map of the current frame (used to filter matches)
+            fliter {bool}: if True, apply optical flow filtering based on movement
+            lc_frame_id {int or None}: if provided, use this frame for loop closure matching
+            depth_threshold {float or None}: if set, remove matches where depth at kp2 > threshold
+                                we need to flitered out the point pair of sky
         """
 
         if lc_frame_id is not None:
@@ -265,6 +267,19 @@ class ClassicTracking:
             kp1 = feat_ref[st == 1]
             kp2 = kp2[st == 1]
 
+        # ------------------------------
+        # Depth-based filtering
+        # ------------------------------
+        if depth is not None and depth_threshold is not None:
+            u = np.round(kp2[:, 0]).astype(int)
+            v = np.round(kp2[:, 1]).astype(int)
+            u = np.clip(u, 0, depth.shape[1] - 1)
+            v = np.clip(v, 0, depth.shape[0] - 1)
+
+            matched_depths = depth[v, u]
+            valid_depth_mask = matched_depths < depth_threshold
+            kp1 = kp1[valid_depth_mask]
+            kp2 = kp2[valid_depth_mask]
 
         if fliter == True:
 
@@ -301,7 +316,7 @@ class ClassicTracking:
             frame = cv2.resize(frame, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
             self.retrieval(frame, frame_id)
         else:
-            print('Loop Closure is disabled!')
+            Log('Loop Closure is disabled!')
 
     def motion_estimation(self, frame, depth, frame_id):
         """
@@ -313,19 +328,23 @@ class ClassicTracking:
             pose {list}: list with ground truth pose [x, y, z]
         """
         
-        self.feat_ref, self.feat_curr = self.feature_matching(frame)
+        self.feat_ref, self.feat_curr = self.feature_matching(frame, depth = depth)
 
-        R, t = compute_pose_2d2d(self.feat_ref, self.feat_curr, self.cam)
+        R, t = compute_pose_2d2d_parallel(self.feat_ref, 
+                                          self.feat_curr, 
+                                          self.cam, 
+                                          max_ransac_iter=self.config['SLAM']['2d2d_thread'])
 
-        depth = preprocess_depth(depth, crop=[[0.3, 1], [0, 1]], depth_range=[0, 50])
-
+        depth = preprocess_depth(depth, crop=[[0.3, 1], [0, 1]], depth_range=[0, 100])
 
         cands = None
 
-
         E_pose = np.eye(4)
         if frame_id == 1:
-            R, t = compute_pose_2d2d(self.feat_ref, self.feat_curr, self.cam)
+            R, t = compute_pose_2d2d_parallel(self.feat_ref, 
+                                              self.feat_curr, 
+                                              self.cam, 
+                                              max_ransac_iter=self.config['SLAM']['2d2d_thread'])
             self.R = R
             self.t = t
             E_pose[:3, :3] = R
@@ -338,11 +357,34 @@ class ClassicTracking:
 
             if frame_id > 10 and self.loop_enable:
                 
-                cands = self.retrieval.detect_loop(thresh=0.033, num_repeat=3)
+                cands = self.retrieval.detect_loop(thresh=self.config['SLAM']['loop_detect_thresh'], num_repeat=3)
 
                 if cands is not None:
-                    print(' -----> LOOP DETECTED!!')
-                    print(cands)
+                    Log(f' -----> {cands} LOOP DETECTED!')
+
+                    (i, j) = cands # e.g. cands = (812, 67)
+
+                    feat_ref_loop, feat_curr_loop = self.feature_matching(self.frame_history[i], 
+                                                                depth = self.depth_history[i], 
+                                                                lc_frame_id = j, 
+                                                                depth_threshold=55)
+
+                    """ Sim(3) Optimization """
+                    pts_world1, pts_world2 = get_matched_camera_points_vectorized(
+                        depth_map1=self.depth_history[i], feat_points1=feat_curr_loop,
+                        depth_map2=self.depth_history[j], feat_points2=feat_ref_loop,
+                        K=self.K
+                    )
+                    
+                    if self.config['SLAM']['viz']:
+                        filename = os.path.join(self.save_dir, 'loop_pair_viz', f'loop_{i}_{j}.png')
+                        draw_concat_keypoints(self.frame_history[i], feat_curr_loop,
+                                            self.frame_history[j], feat_ref_loop,
+                                            filename)
+                    """ Avoid multiple back-to-back detections """
+                    self.retrieval.confirm_loop(i, j)
+                    self.retrieval.found.clear()
+
                 self.retrieval.save_up_to(frame_id)
 
             if cands is None or not self.loop_enable:
@@ -356,11 +398,12 @@ class ClassicTracking:
                 )
 
                 if np.linalg.norm(t) == 0 or scale == -1.0:
-                    R, t = compute_pose_3d2d(
+                    R, t = compute_pose_3d2d_parallel(
                             self.feat_ref,
                             self.feat_curr,
                             self.prev_depth,
-                            self.cam
+                            self.cam,
+                            max_ransac_iter=self.config['SLAM']['3d2d_thread']
                         )  # pose: from cur->ref
                 scale = 1 if scale == -1.0 else scale
 
@@ -369,28 +412,14 @@ class ClassicTracking:
                 self.R = self.R.dot(R)
 
             else:
-                (i, j) = cands # e.g. cands = (812, 67)
-                loop_frame_id = cands[1]
-
-                feat_ref, feat_curr = self.feature_matching(self.frame_history[i], lc_frame_id = j)
-
-                
-                """ Avoid multiple back-to-back detections """
-                self.retrieval.confirm_loop(i, j)
-                self.retrieval.found.clear()
-
-
-                """ Sim(3) Optimization """
-
-                pts_world1, pts_world2 = get_matched_camera_points_vectorized(
-                    depth_map1=self.depth_history[i], feat_points1=feat_curr,
-                    depth_map2=self.depth_history[j], feat_points2=feat_ref,
-                    K=self.K
-                )
-                
-                s, r, t = compute_sim3_open3d(pts_world1, pts_world2)
-
-                far_rel_pose = make_pypose_Sim3(r, t, s)[None] # shape([1, 8])
+                R, t = compute_pose_2d2d_parallel(feat_ref_loop, 
+                                                  feat_curr_loop, 
+                                                  self.cam, 
+                                                  max_ransac_iter=self.config['SLAM']['2d2d_thread'])
+                loop_r = R
+                loop_t = t.squeeze()
+                loop_s = 1.0
+                far_rel_pose = make_pypose_Sim3(loop_r, loop_t, loop_s)[None] # shape([1, 8])
 
                 poses_quat = torch.tensor(convert_pose_numpy_to_opencv_vectorized(self.pose_history, inv = True)).unsqueeze(0) # shape([1, n, 7])
                 Gi = pp.SE3(poses_quat[:,self.loop_ii])
@@ -417,7 +446,6 @@ class ClassicTracking:
 
                 output_matrix = poses_to_c2w_tensor(output[:, :7]).numpy()
 
-
                 E_pose_loop = output_matrix[-1, :, :]
                 t_loop = E_pose_loop[:3, 3:]
                 R_loop = E_pose_loop[:3, :3]
@@ -425,9 +453,13 @@ class ClassicTracking:
                 self.R = R_loop
 
                 self.pose_history_old = self.pose_history.copy()
+                # self.pose_history[:output_matrix.shape[0], :, :] = output_matrix
                 self.pose_history[:output_matrix.shape[0], :, :] = output_matrix
 
                 self.loop_kf_idx = output_matrix.shape[0]
+
+                # viz the loop closure
+                self.viz_pose(frame_id)
 
         E_pose[:3, :3] = self.R
         E_pose[: 3, 3:] = self.t
@@ -464,7 +496,6 @@ class ClassicTracking:
         frame_uint8 = frame_normalized.astype(np.uint8)
         frame = cv2.cvtColor(np.transpose(frame_uint8, (1, 2, 0)), cv2.COLOR_RGB2GRAY)
 
-
         loop_flag = False
 
         if frame_id == 0:
@@ -490,9 +521,7 @@ class ClassicTracking:
     def update_tracking_pose(self, c2w):
         self.pose = c2w
         self.w2c = np.linalg.inv(self.pose)
-
         
-
 
 def preprocess_depth(depth, crop, depth_range):
     """
@@ -594,6 +623,80 @@ def compute_pose_3d2d(kp1, kp2, depth_1, cam_intrinsics):
     R = E_pose[:3, :3]
     t = E_pose[: 3, 3:]
     return R, t
+
+
+def compute_pose_3d2d_parallel(kp1, kp2, depth_1, cam_intrinsics, max_ransac_iter=20):
+    '''
+        Faster
+    '''
+    max_depth = 50
+    min_depth = 0
+
+    height, width = depth_1.shape
+
+    x_idx = (kp1[:, 0] >= 0) & (kp1[:, 0] < width) & (kp2[:, 0] >= 0) & (kp2[:, 0] < width)
+    kp1 = kp1[x_idx]
+    kp2 = kp2[x_idx]
+    y_idx = (kp1[:, 1] >= 0) & (kp1[:, 1] < height) & (kp2[:, 1] >= 0) & (kp2[:, 1] < height)
+    kp1 = kp1[y_idx]
+    kp2 = kp2[y_idx]
+
+    kp1_int = kp1.astype(int)
+    kp_depths = depth_1[kp1_int[:, 1], kp1_int[:, 0]]
+    valid_kp_mask = (kp_depths != 0) & (kp_depths < max_depth) & (kp_depths > min_depth)
+    kp1 = kp1[valid_kp_mask]
+    kp2 = kp2[valid_kp_mask]
+    kp_depths = kp_depths[valid_kp_mask]
+
+    if len(kp1) < 5:
+        return np.eye(3), np.zeros((3, 1))  # Not enough points
+
+    XYZ_kp1 = unprojection_kp(kp1, kp_depths, cam_intrinsics)
+
+    def run_pnp_once(seed=None):
+        np.random.seed(seed)
+        new_list = np.arange(0, kp2.shape[0])
+        np.random.shuffle(new_list)
+        new_XYZ = XYZ_kp1[new_list]
+        new_kp2 = kp2[new_list]
+
+        if new_kp2.shape[0] > 4:
+            flag, r, t, inliers = cv2.solvePnPRansac(
+                objectPoints=new_XYZ,
+                imagePoints=new_kp2,
+                cameraMatrix=cam_intrinsics.mat,
+                distCoeffs=None,
+                iterationsCount=100,
+                reprojectionError=1,
+            )
+            if flag and inliers is not None:
+                return {
+                    "inliers": len(inliers),
+                    "r": r,
+                    "t": t
+                }
+        return {"inliers": 0}
+
+    with ThreadPoolExecutor(max_workers=max_ransac_iter) as executor:
+        futures = [executor.submit(run_pnp_once, seed=i) for i in range(max_ransac_iter)]
+        results = [f.result() for f in futures]
+
+    best = max(results, key=lambda x: x["inliers"])
+    if best["inliers"] == 0:
+        return np.eye(3), np.zeros((3, 1))  # fallback
+
+    R = cv2.Rodrigues(best["r"])[0]
+    t = best["t"]
+
+    E_pose = np.eye(4)
+    E_pose[:3, :3] = R
+    E_pose[:3, 3:] = t
+    E_pose = np.linalg.inv(E_pose)
+    R = E_pose[:3, :3]
+    t = E_pose[:3, 3:]
+
+    return R, t
+
 
 
 def unprojection_kp(kp, kp_depth, cam_intrinsics):
@@ -706,6 +809,90 @@ def calc_GRIC(res, sigma, n, model):
 
     return sum_
 
+def compute_pose_2d2d_parallel(kp_ref, kp_cur, cam_intrinsics, max_ransac_iter=20):
+    '''
+        Faster
+    '''
+    principal_points = (cam_intrinsics.cx, cam_intrinsics.cy)
+
+    if kp_cur.shape[0] <= 10:
+        return np.eye(3), np.zeros((3, 1))
+
+    H, H_inliers = cv2.findHomography(
+        kp_cur, kp_ref,
+        method=cv2.RANSAC,
+        confidence=0.99,
+        ransacReprojThreshold=1,
+    )
+    H_res = compute_homography_residual(H, kp_cur, kp_ref)
+    H_gric = calc_GRIC(
+        res=H_res,
+        sigma=0.8,
+        n=kp_cur.shape[0],
+        model="HMat"
+    )
+
+    def ransac_worker(seed):
+        np.random.seed(seed)
+        indices = np.arange(kp_cur.shape[0])
+        np.random.shuffle(indices)
+
+        new_kp_cur = kp_cur[indices]
+        new_kp_ref = kp_ref[indices]
+
+        E, inliers = cv2.findEssentialMat(
+            new_kp_cur,
+            new_kp_ref,
+            focal=cam_intrinsics.fx,
+            pp=principal_points,
+            method=cv2.RANSAC,
+            prob=0.99,
+            threshold=0.2,
+        )
+
+        if E is None:
+            return None
+
+        K = cam_intrinsics.mat
+        F = np.linalg.inv(K.T) @ E @ np.linalg.inv(K)
+        E_res = compute_fundamental_residual(F, new_kp_cur, new_kp_ref)
+        E_gric = calc_GRIC(res=E_res, sigma=0.8, n=kp_cur.shape[0], model='EMat')
+
+        if H_gric <= E_gric:
+            return None 
+
+        inlier_count = int(inliers.sum())
+        revert_indices = np.argsort(indices)
+        final_inliers = inliers[revert_indices]
+
+        return {
+            'E': E,
+            'inliers': final_inliers,
+            'count': inlier_count
+        }
+
+    with ThreadPoolExecutor(max_workers=max_ransac_iter) as executor:
+        results = list(executor.map(ransac_worker, range(max_ransac_iter)))
+
+    best_result = max([r for r in results if r is not None], key=lambda x: x['count'], default=None)
+
+    if best_result is None:
+        return np.eye(3), np.zeros((3, 1))
+
+    cheirality_cnt, R, t, _ = cv2.recoverPose(
+        best_result['E'],
+        kp_cur,
+        kp_ref,
+        focal=cam_intrinsics.fx,
+        pp=principal_points
+    )
+
+    if cheirality_cnt > kp_cur.shape[0] * 0.1:
+        return R, t
+    else:
+        return np.eye(3), np.zeros((3, 1))
+
+
 
 def compute_pose_2d2d(kp_ref, kp_cur, cam_intrinsics):
     """
@@ -718,7 +905,7 @@ def compute_pose_2d2d(kp_ref, kp_cur, cam_intrinsics):
     t = np.zeros((3, 1))
     best_Rt = [R, t]
     best_inlier_cnt = 0
-    max_ransac_iter = 3
+    max_ransac_iter = 5
     best_inliers = np.ones((kp_ref.shape[0], 1)) == 1
 
     # method GRIC of validating E-tracker

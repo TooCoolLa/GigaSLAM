@@ -9,13 +9,12 @@ import torch.multiprocessing as mp
 import yaml
 from munch import munchify
 
-import wandb
 from gaussian_splatting.scene.scaffold_model import GaussianModel
 from gaussian_splatting.utils.system_utils import mkdir_p
 from gui import gui_utils, slam_gui
 from utils.config_utils import load_config
 from utils.dataset import load_dataset
-from utils.eval_utils import eval_ate, eval_rendering, save_gaussians
+from utils.eval_utils import eval_rendering
 from utils.logging_utils import Log
 from utils.multiprocessing_utils import FakeQueue
 from utils.slam_backend import BackEnd
@@ -23,8 +22,6 @@ from utils.slam_frontend import FrontEnd
 
 import warnings
 warnings.filterwarnings("ignore")
-
-# What a beautiful mess this repo is... TAT (will clean up ASAP, promise!)
 
 class SLAM:
     def __init__(self, config, save_dir=None):
@@ -64,13 +61,13 @@ class SLAM:
 
         # ===== Scaffold GS ===== #
         self.feat_dim = 32
-        self.n_offsets = 16
-        self.voxel_size =  0.005 # if voxel_size<=0, using 1nn dist. do not use this in slam
+        self.n_offsets = self.config['Hierarchical']['n_offsets'] # 16
+        self.voxel_size =  0.005 # if voxel_size<=0, using 1nn dist
 
-
-        self.voxel_size_lis = [0.1, 0.25, 1, 5, 25]
-
-        self.distance_lis = [20, 40, 80, 160]
+        # self.voxel_size_lis = [0.1, 0.25, 1, 5, 25]
+        # self.distance_lis = [20, 40, 80, 160]
+        self.voxel_size_lis = self.config['Hierarchical']['voxel_size_lis']
+        self.distance_lis = self.config['Hierarchical']['distance_lis']
 
         self.max_level = len(self.voxel_size_lis) - 1
 
@@ -88,12 +85,14 @@ class SLAM:
         self.eval = False
         self.lod = 0
 
-        self.appearance_dim = 64
+        self.appearance_dim = self.config['Hierarchical']['appearance_dim']
         self.lowpoly = False
         self.ds = 1
-        self.ratio = 1 
+        self.ratio = 1 # sampling the input point cloud
         self.undistorted = False 
         
+        # In the Bungeenerf dataset, we propose to set the following three parameters to True,
+        # Because there are enough dist variations.
         self.add_opacity_dist = False
         self.add_cov_dist = False
         self.add_color_dist = False
@@ -117,7 +116,7 @@ class SLAM:
 
         # ===== Scaffold GS ===== #
 
-        bg_color = [0, 0, 0]
+        bg_color = [1, 1, 1]
         self.background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 
         frontend_queue = mp.Queue()
@@ -129,7 +128,7 @@ class SLAM:
         self.config["Results"]["save_dir"] = save_dir
         self.config["Training"]["monocular"] = self.monocular
 
-        self.frontend = FrontEnd(self.config, self.dataset)
+        self.frontend = FrontEnd(self.config, self.dataset, save_dir = self.save_dir)
         self.backend = BackEnd(self.config, self.dataset)
 
         # self.frontend.dataset = self.dataset
@@ -173,29 +172,10 @@ class SLAM:
         end.record()
         torch.cuda.synchronize()
         # empty the frontend queue
-        N_frames = len(self.frontend.cameras)
-        FPS = N_frames / (start.elapsed_time(end) * 0.001)
-        Log("Total time", start.elapsed_time(end) * 0.001, tag="Eval")
-        Log("Total FPS", N_frames / (start.elapsed_time(end) * 0.001), tag="Eval")
 
         if self.eval_rendering:
             self.gaussians = self.frontend.gaussians
             kf_indices = self.frontend.kf_indices
-
-            rendering_result = eval_rendering(
-                self.frontend.cameras,
-                self.gaussians,
-                self.dataset,
-                self.save_dir,
-                self.pipeline_params,
-                self.background,
-                intrinsics=self.backend.intrinsics,
-                height=self.backend.height,
-                width=self.backend.width,
-                kf_indices=kf_indices,
-                iteration="before_opt",
-            )
-            columns = ["tag", "psnr", "ssim", "lpips", "RMSE ATE", "FPS"]
 
             # re-used the frontend queue to retrive the gaussians from the backend.
             while not frontend_queue.empty():
@@ -223,8 +203,9 @@ class SLAM:
                 width=self.backend.width,
                 kf_indices=kf_indices,
                 iteration="after_opt",
+                upsampling_method=config['Hierarchical']['upsampling_method']
+                
             )
-
         backend_queue.put(["stop"])
         backend_process.join()
         Log("Backend stopped and joined the main thread")
@@ -273,7 +254,8 @@ if __name__ == "__main__":
         else:
             current_datetime += '-No-LC'
 
-        path = config["Dataset"]["dataset_path"].split("/")
+        # path = config["Dataset"]["dataset_path"].split("/")
+        path = config["Dataset"]["color_path"].split("/")
         save_dir = os.path.join(
             config["Results"]["save_dir"], path[-3] + "_" + path[-2] + "_" + path[-1], current_datetime
         )

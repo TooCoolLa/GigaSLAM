@@ -26,7 +26,7 @@ SLAM:
   n_max: 5000 # maximum number of keyframes; increase if the sequence is longer
 
 DepthModel:
-  from_huggingface: False
+  from_huggingface: True
   huggingface:
     model_name: 'lpiccinelli/unidepth-v2-vitl14' 
     # vits / vitb / vitl: the larger the better but more GPU memory consumption

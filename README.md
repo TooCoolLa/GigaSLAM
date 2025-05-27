@@ -16,7 +16,7 @@ https://deepwiki.com/DengKaiCQ/GigaSLAM
 
 ### Update Log
 
-[2025/05/26] Fixed several issues including config files and submodule problems; refactored the code to reduce unnecessary memory allocations and improve thread-level parallelism; restructured parts of the underlying logic; updated the content of the paper, added some experiments and visualizations, and improved the writing of the article.
+[2025/05/26] Fixed several issues including config files and submodule problems; refactored the code to reduce unnecessary memory allocations and improve thread-level parallelism; restructured parts of the underlying logic of the code; updated the paper, added some experiments and visualizations, and improved the writing of the article.
 
 ##  Setup, Installation & Running
 
@@ -158,13 +158,30 @@ ls -l ORBvoc.txt
 
 ### Running the code
 
-(To be done. need to modify)
+Set your config file:
 
-Run the following command to start the SLAM process. **Pretrained weights** for `DISK`, `LightGlue`, and `UniDepth` will be automatically downloaded on the first execution:
+Before running the project, you need to modify the `.yaml` files under the `./config` directory.  Specifically, replace the dataset path with the path to your downloaded dataset in `PNG` or `JPG` format. For example:
+
+```yaml
+...
+Dataset:
+  color_path: "/media/deng/Data/4SeasonsDataset/BusinessCampus_recording_2020-10-08_09-30-57/undistorted_images/cam0" # replace it to your local path
+  Calibration:
+    fx: 501.4757919305817
+...
+```
+
+Then, run the following command to start the SLAM process. **Pretrained weights** for `DISK`, `LightGlue`, and `UniDepth` will be automatically downloaded on the first execution:
 
 ```bash
 python slam.py --config ./path_to_your_config.yaml
 ```
+
+**Note on loading `UniDepth` from Hugging Face:** `UniDepth` models are loaded from Hugging Face Hub by default.  However, due to network restrictions **in certain countries/regions**, even with a VPN, the model may fail to load properly. If this happens, set the `['DepthModel']['from_huggingface']` field in your `.yaml` config file to `False`.  Then manually download the `UniDepth` model weights (e.g., via a web browser),  and set the local path to the downloaded weights in the `['DepthModel']['local_snapshot_path']` field. You can find download links for various `UniDepth` model weights in the [UniDepth repository](https://github.com/lpiccinelli-eth/UniDepth)
+
+Additionally, if you set `['SLAM']['viz']` in the `.yaml` file, you will be able to see output like the following in the `result/your_exp/` directory during execution:
+
+![running_outpus](./assets/running_outpus.png)
 
 > **Important Notes:** This project is implemented based on the MonoGS framework, whose native architecture primarily targets small-scale scenes. In terms of hardware requirements, processing ultra-long sequence data significantly increases CPU RAM load - through targeted optimizations, we have stabilized the CPU memory consumption of 4000-frame KITTI datasets at approximately 10 GiB. However, longer sequences may still require additional memory resources. We strongly recommend running this system on server environments equipped with 32+ GiB CPU RAM. For **personal computers**  (particularly common 16 GiB CPU RAM setups), please continuously monitor memory usage via System Monitor (or similar) to prevent sudden memory spikes from affecting other system processes.
 >

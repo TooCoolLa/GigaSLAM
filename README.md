@@ -6,6 +6,8 @@ This repository contains the source code for our papers:
 
 ![pipeline-a2d2](./assets/pipeline.png)
 
+![kitti_render](./assets/kitti_render.png)
+
 ![render-cmp](./assets/render-cmp.png)
 
 ![A2D2](./assets/A2D2.png)

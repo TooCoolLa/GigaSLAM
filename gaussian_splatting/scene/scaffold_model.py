@@ -817,7 +817,11 @@ class GaussianModel:
         # T_w2c[2, 3] = -T_w2c[2, 3]
         cam_center = camera.camera_center
         # cam_center[2] = -cam_center[2]
-        point_cloud, color = self.pcd_from_depth(depthmap, T_w2c, rgb=rgb, mask=generate_mask(depthmap))
+        point_cloud, color = self.pcd_from_depth(depthmap, 
+                                                 T_w2c, 
+                                                 rgb=rgb, 
+                                                 mask=generate_mask(depthmap, 
+                                                                    point_ratio=self.config['Hierarchical']['point_ratio']))
 
 
         if init:

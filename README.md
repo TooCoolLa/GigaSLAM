@@ -1,6 +1,6 @@
 <p align="center">
 <p align="center">
-<h2 align="center">GigaSLAM</h2>
+<h1 align="center">GigaSLAM: Large-Scale Monocular SLAM with Hierarchical Gaussian Splats</h1>
 </p>
 
 This repository contains the source code for our papers:

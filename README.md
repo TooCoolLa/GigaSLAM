@@ -26,7 +26,7 @@ https://deepwiki.com/DengKaiCQ/GigaSLAM
 
 ##  Setup, Installation & Running
 
-### Hardware and System Environment
+### 🖥️ 1 - Hardware and System Environment 
 
 This project was developed, tested, and run in the following hardware/system environment
 
@@ -53,7 +53,7 @@ Compilers & Build Tools:
 
 As part of the project code relies on `CUDA/C++`, please ensure your compilation environment is properly workable.
 
-### Environment Setup
+### 📦 2 - Environment Setup 
 
 #### Step 1: Dependency Installation
 
@@ -162,7 +162,7 @@ tar -xzvf ORBvoc.txt.tar.gz
 ls -l ORBvoc.txt
 ```
 
-### Running the code
+### 🚀 3 - Running the code 
 
 Before running the project, you need to modify the `.yaml` files under the `./config` directory.  Specifically, replace the dataset path with the path to your downloaded dataset in `PNG` or `JPG` format and the camera intrinsics `fx` `fy` `cx` `cy`. For example,
 

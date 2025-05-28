@@ -18,9 +18,11 @@ We would like to thank [Devin.ai](https://devin.ai/) for providing large languag
 
 https://deepwiki.com/DengKaiCQ/GigaSLAM
 
-### Update Log
+### **Change Log**
 
-[2025/05/26] 1. Fixed several issues including config files and submodule problems; 2. Refactored the code to reduce unnecessary memory allocations and improve thread-level parallelism; 3. Restructured parts of the underlying logic of the code; 4. Updated the paper, added some experiments and visualizations, and improved the writing of the article.
+`[26 May 2025]` 1. Fixed several issues including config files and submodule problems; 2. Refactored the code to reduce unnecessary memory allocations and improve thread-level parallelism; 3. Restructured parts of the underlying logic of the code; 4. Updated the paper, added some experiments and visualizations, and improved the writing of the article.
+
+`[11 Mar 2025]` Arxiv paper submitted.
 
 ##  Setup, Installation & Running
 

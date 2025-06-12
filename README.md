@@ -17,13 +17,13 @@ This repository contains the source code for our papers:
 
 ![A2D2](./assets/A2D2.png)
 
-We would like to thank [Devin.ai](https://devin.ai/) for providing large language model tools to assist in analyzing the repository code and help everyone better understand `GigaSLAM`. Below is the link to our repository - we welcome all visitors:
-
-https://deepwiki.com/DengKaiCQ/GigaSLAM
-
 ### **Change Log**
 
-`[26 May 2025]` 1. Fixed several issues including config files and submodule problems; 2. Refactored the code to reduce unnecessary memory allocations and improve thread-level parallelism; 3. Restructured parts of the underlying logic of the code; 4. Updated the paper, added some experiments and visualizations, and improved the writing of the article.
+`[13 Jun 2025]` 1. Fixed several bugs especially ones related to `UniDepth` (see issue #5, #6 and [this link](https://github.com/lpiccinelli-eth/UniDepth/issues/128)); 2. Added some missing dependencies in `requirements.txt`; 3. Fixed some typos and grammar mistakes in the code and README.
+
+`[10 Jun 2025]` Arxiv paper v2: Added more experiments, expanded visuals, included additional details, and fixed typos \& grammar.
+
+`[26 May 2025]` 1. Fixed several issues including config files and submodule problems; 2. Refactored the code to reduce unnecessary memory allocations and improve thread-level parallelism; 3. Restructured parts of the underlying logic of the code for readability; 4. Updated the paper, added some experiments and visualizations, and improved the writing of the article.
 
 `[11 Mar 2025]` Arxiv paper submitted.
 
@@ -156,7 +156,7 @@ Download the pre-trained Bag of Words vocabulary for `DBoW2`:
 ```bash
 # Download the vocabulary file (about 150 MiB)
 wget https://github.com/UZ-SLAMLab/ORB_SLAM3/raw/master/Vocabulary/ORBvoc.txt.tar.gz
-# Or, you could download manually from the link via your browser
+# You could download manually from the link via your browser
 
 # Extract the vocabulary file
 tar -xzvf ORBvoc.txt.tar.gz
@@ -182,16 +182,22 @@ Dataset:
 Then, run the following command to start the SLAM process. **Pretrained weights** for `DISK`, `LightGlue`, and `UniDepth` will be automatically downloaded on the first execution:
 
 ```bash
-python slam.py --config ./path_to_your_config.yaml
+python slam.py --config <path_to_your_config>.yaml
 ```
 
 for example,
 
 ```bash
-python slam.py --config ./kitti_06.yaml
+python slam.py --config ./configs/kitti_06.yaml
 ```
 
-**Note on loading `UniDepth` from HuggingFace:** `UniDepth` models are loaded from **HuggingFaceHub** by default.  However, due to network restrictions **in certain countries/regions**, even with a VPN, the model may fail to load properly. If this happens, set the `['DepthModel']['from_huggingface']` to `False`.  Then manually download the `UniDepth` model weights (e.g., via a web browser),  and set the local path to the downloaded weights in the `['DepthModel']['local_snapshot_path']` field. You can find download links for various `UniDepth` model weights in the [UniDepth repository](https://github.com/lpiccinelli-eth/UniDepth).
+**Note on loading `UniDepth` from HuggingFace:** `UniDepth` models are loaded from **HuggingFaceHub** by default.  However, due to network restrictions **in certain countries/regions**, even with a VPN, the model may fail to load properly. If this happens, try run the following command before running:
+
+```cmd
+export HF_ENDPOINT=https://hf-mirror.com
+```
+
+If the problem is still unsolved, set the `['DepthModel']['from_huggingface']` to `False`.  Then manually download the `UniDepth` model weights (e.g., via a web browser),  and set the local path to the downloaded weights in the `['DepthModel']['local_snapshot_path']` field. You can find download links for various `UniDepth` model weights in links: [UniDepth V2 HuggingFace VtT-L [12 Jun 2024]](https://huggingface.co/lpiccinelli/unidepth-v2-vitl14/tree/1d0d3c52f60b5164629d279bb9a7546458e6dcc4) \& [UniDepth V2 HuggingFace VtT-S [12 Jun 2024]](https://huggingface.co/lpiccinelli/unidepth-v2-vits14/tree/045c7eff65610869bf4917432ec3ba0d739f0cb7). And pay attention to the version of pre-trained weights of `UniDepthV2`. This repository specifically uses the pre-trained weights version dated `[12 Jun 2024]`. Please be advised that newer releases of `UniDepthV2` are currently incompatible with `GigaSLAM` due to unknown reasons.
 
 The snapshot directory may contain the files as follows:
 
@@ -202,9 +208,10 @@ snapshot_dir
     └── pytorch_model.bin
 ```
 
-If you set `['SLAM']['viz']` to `True` in the `.yaml` file, you will be able to see output like the following in the `result/your_exp/` directory during execution:
+If you set `['SLAM']['viz']` to `True` in the `.yaml` file, you will be able to see output like the following in the `results/your_exp/` directory during execution:
 
 ![running_outpus](./assets/running_outpus.png)
+![running_outpus_2](./assets/running_outputs_2.png)
 
 > **Important Notes:** This project is implemented based on the MonoGS framework, whose native architecture primarily targets small-scale scenes. In terms of hardware requirements, processing ultra-long sequence data significantly increases CPU RAM load - through targeted optimizations, we have stabilized the CPU memory consumption of 4000-frame KITTI datasets at approximately 10 GiB. However, longer sequences may still require additional memory resources. We strongly recommend running this system on server environments equipped with 32+ GiB CPU RAM. For **personal computers**  (particularly common 16 GiB CPU RAM setups), please continuously monitor memory usage via System Monitor (or similar) to prevent sudden memory spikes from affecting other system processes.
 >

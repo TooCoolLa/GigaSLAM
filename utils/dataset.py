@@ -149,6 +149,7 @@ class MonocularDataset(BaseDataset):
 
         # pose = torch.from_numpy(pose).to(device=self.device)
         return image, depth, image_ori.transpose(2, 0, 1), depth_ori, pose
+        # in GigaSLAM, depth, depth_ori, pose are all None
 
 
 class KITTIDataset(MonocularDataset):

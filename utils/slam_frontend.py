@@ -76,6 +76,12 @@ class FrontEnd(mp.Process):
         cam_params_ori['width'] = self.dataset.width_ori,
         cam_params_ori['height'] = self.dataset.height_ori,
 
+        self.intrinsics_ori = torch.tensor([
+                [self.dataset.fx_ori,   0,                      self.dataset.cx_ori ],
+                [0,                     self.dataset.fy_ori,    self.dataset.cy_ori ],
+                [0,                     0,                      1                   ]
+            ], device='cuda')
+        
         loop_enable = config['SLAM']['loop_closure']
         self.viz = config['SLAM']['viz']
 
@@ -91,8 +97,10 @@ class FrontEnd(mp.Process):
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if config['DepthModel']['from_huggingface']:
-            path = huggingface_hub.hf_hub_download(repo_id=config['DepthModel']['huggingface']['model_name'], filename=f"pytorch_model.bin", repo_type="model")
-            self.depth_model = UniDepthV2.load_state_dict(torch.load(path), strict=False)
+            self.depth_model = UniDepthV2.from_pretrained(
+                config['DepthModel']['huggingface']['model_name'],
+                revision=config['DepthModel']['huggingface']['commit_hash']
+                )
         else:
             self.depth_model = UniDepthV2.from_pretrained(config['DepthModel']['local_snapshot_path'])
             
@@ -279,7 +287,7 @@ class FrontEnd(mp.Process):
 
                 # unidepth take [C(rgb), H, W] as input 0~255 in uint8
                 image_ori_for_depthmodel = torch.tensor(viewpoint.image_ori).cuda().to(torch.uint8)
-                predictions = self.depth_model.infer(image_ori_for_depthmodel, self.intrinsics) # return [1, 1, H, W]
+                predictions = self.depth_model.infer(image_ori_for_depthmodel, self.intrinsics_ori) # return [1, 1, H, W]
                 depth_pred = predictions["depth"].detach() # depth range: 0-255 in float
                 depth_ori = depth_pred.squeeze().cpu().numpy() # shape: [H, W]
                 depth_down = cv2.resize(depth_ori, (self.dataset.width, self.dataset.height))

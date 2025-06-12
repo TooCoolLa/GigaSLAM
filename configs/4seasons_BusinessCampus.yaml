@@ -26,21 +26,27 @@ SLAM:
   n_max: 15000 # maximum number of keyframes; increase if the sequence is longer
 
 DepthModel:
+  # NOTE: Avoid using the latest UniDepthV2 version due to compatibility issues
+  # Use the pretrained weights from commit dated June 12, 2024
   from_huggingface: True
   huggingface:
     model_name: 'lpiccinelli/unidepth-v2-vitl14' 
-    # vits / vitb / vitl: the larger the better but more GPU memory consumption
+    commit_hash: '1d0d3c52f60b5164629d279bb9a7546458e6dcc4'
+    # vits / vitl: the larger the better but more GPU memory consumption
     # lpiccinelli/unidepth-v2-vits14
-    # lpiccinelli/unidepth-v2-vitb14
+    # commit hash: 045c7eff65610869bf4917432ec3ba0d739f0cb7
     # lpiccinelli/unidepth-v2-vitl14
-  local_snapshot_path: '/media/deng/Data/UniDepth/weight/models--lpiccinelli--unidepth-v2-vitl14/snapshots/1d0d3c52f60b5164629d279bb9a7546458e6dcc4' 
-  # replace it to your local path is snapshot downloaded
+    # commit hash: 1d0d3c52f60b5164629d279bb9a7546458e6dcc4
+  local_snapshot_path: '/media/deng/Data/UniDepth-old/weight/models--lpiccinelli--unidepth-v2-vitl14/snapshots/1d0d3c52f60b5164629d279bb9a7546458e6dcc4' 
+  # replace it to your local path where snapshot downloaded
 
 Hierarchical:
   voxel_size_lis: [0.1, 0.25, 1, 5, 25] # length must be equal to len(distance_lis) + 1
   distance_lis: [20.0, 40.0, 80.0, 160.0] # depth range of unidepth: 0~255
+  # Current voxel_size_lis and distance_lis aren't optimal - they just works. 
+  # I bet there's a better settings out there that would give us nicer rendering results.
   n_offsets: 24 # the larger the better
-  point_ratio: 26 # the smaller the better
+  point_ratio: 20 # the smaller the better
   appearance_dim: 64
   color_refinement_iter: 200 # the larger the better
   rendering_width: 480

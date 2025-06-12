@@ -168,11 +168,3 @@ def draw_concat_keypoints(img1, keypoints1, img2, keypoints2, output_path):
     concatenated = cv2.vconcat([img1_color, img2_color])
     
     cv2.imwrite(output_path, concatenated)
-    
-if __name__ == "__main__":
-    pose_est_path = '/media/deng/Data/Metric-MonoGS-LC/results/recording_2020-10-08_09-30-57_undistorted_images_cam0/2025-05-12-14-39-47-No-LC/poses_est.txt'
-    pose_est_data = load_poses_monogs(pose_est_path, inv=False)
-    trajectory_length = calculate_trajectory_length(pose_est_data)
-    print(f"Total trajectory length: {trajectory_length} meters")
-
-    plot_camera_poses(pose_est_data)

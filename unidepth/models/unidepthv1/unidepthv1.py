@@ -12,7 +12,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 from einops import rearrange
-# from huggingface_hub import PyTorchModelHubMixin
+from huggingface_hub import PyTorchModelHubMixin
 
 from unidepth.models.unidepthv1.decoder import Decoder
 from unidepth.utils.constants import (IMAGENET_DATASET_MEAN,

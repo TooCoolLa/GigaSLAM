@@ -19,7 +19,7 @@ This repository contains the source code for our papers:
 
 ### **Change Log**
 
-`[13 Jun 2025]` 1. Fixed several bugs especially ones related to `UniDepth` (see issue #5, #6 and [this link](https://github.com/lpiccinelli-eth/UniDepth/issues/128)); 2. Fixed some typos and grammar mistakes in the code and README.
+`[13 Jun 2025]` 1. Fixed several bugs especially ones related to `UniDepth` (see issue #6, #7 and [this link](https://github.com/lpiccinelli-eth/UniDepth/issues/128)); 2. Fixed some typos and grammar mistakes in the code and README.
 
 `[10 Jun 2025]` Arxiv paper v2: Added more experiments, expanded visuals, included additional details, and fixed typos \& grammar.
 

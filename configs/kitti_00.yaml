@@ -46,7 +46,7 @@ Hierarchical:
   # Current voxel_size_lis and distance_lis aren't optimal - they just works. 
   # I bet there's a better settings out there that would give us nicer rendering results.
   n_offsets: 24 # the larger the better
-  point_ratio: 20 # the smaller the better
+  point_ratio: 26 # the smaller the better
   appearance_dim: 64
   color_refinement_iter: 200 # the larger the better
   rendering_width: 480
